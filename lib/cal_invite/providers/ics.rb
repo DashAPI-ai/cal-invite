@@ -70,10 +70,30 @@ module CalInvite
 
         calendar_lines << "END:VCALENDAR"
         ensure_single_line_values!(calendar_lines)
-        calendar_lines.join("\r\n")
+        calendar_lines.map { |line| fold_line(line) }.join("\r\n")
       end
 
       private
+
+      # Maximum content line length in octets, excluding the CRLF (RFC 5545 §3.1).
+      MAX_LINE_OCTETS = 75
+
+      # Folds a content line longer than 75 octets into CRLF + single-space
+      # continuation lines (RFC 5545 §3.1). Splits only between characters, so a
+      # multi-byte UTF-8 character is never cut in half.
+      #
+      # @param line [String] A single unfolded content line
+      # @return [String] The folded line (unchanged if already short enough)
+      def fold_line(line)
+        return line if line.bytesize <= MAX_LINE_OCTETS
+
+        segments = [+""]
+        line.each_char do |char|
+          segments << +" " if segments.last.bytesize + char.bytesize > MAX_LINE_OCTETS
+          segments.last << char
+        end
+        segments.join("\r\n")
+      end
 
       # Last line of defense against content-line injection: a CR or LF inside a
       # value would end the line and let the rest of the value be parsed as new
