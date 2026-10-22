@@ -99,7 +99,7 @@ event.generate_calendar_url(provider, method: :publish)
 | `provider`| `Symbol` | required   | One of the provider symbols above (a String also works). Anything else raises `ArgumentError` listing the supported providers. `:ics_content` is accepted as a legacy alias of `:ics`. |
 | `method`  | `Symbol` | `:publish` | `:publish`, `:request`, `:cancel`, `:reply`, `:counter`, or `:decline_counter`. Only honored by `:ics`/`:ical` — ignored by URL-based providers. `:request` requires `organizer` to be set on the event; see below. `:cancel` requires reusing the original `uid` — see [Updating and cancelling invites](#updating-and-cancelling-invites). `:reply`/`:counter`/`:decline_counter` omit `RSVP=TRUE` on `ATTENDEE` lines — see [Attendee RSVP status and METHOD:REPLY](#attendee-rsvp-status-and-methodreply) and [Attendee-proposed reschedules (COUNTER)](#attendee-proposed-reschedules-counter). Note: `:decline_counter` renders as `METHOD:DECLINECOUNTER` (one word, per RFC 5545). |
 
-Output is generated fresh on every call. CalInvite doesn't cache anything: building the output takes microseconds, and a cached `.ics` would keep a stale `DTSTAMP`. If you want caching anyway, do it in your app, keyed on whatever identifies the content and changes with it:
+Output is generated fresh on every call. CalInvite doesn't cache anything: building the output takes microseconds, and a cached `.ics` would keep a stale `DTSTAMP`. If you want caching anyway, do it in your app, keyed on whatever identifies the content and changes with it (more examples, including HTTP caching, in [CACHING.md](CACHING.md)):
 
 ```ruby
 Rails.cache.fetch([meeting, meeting.sequence, :ics]) do
