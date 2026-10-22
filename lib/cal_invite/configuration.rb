@@ -22,7 +22,8 @@ module CalInvite
       @timezone = 'UTC'
     end
 
-    # Sets the cache store to use for caching calendar URLs.
+    # Sets the cache store backing the CalInvite cache helpers (CalInvite.fetch_from_cache etc.).
+    # Event#generate_calendar_url never caches its output.
     #
     # @param store [Symbol, #read, #write, #delete] The cache store to use
     # @raise [ArgumentError] If an unsupported cache store is provided

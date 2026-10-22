@@ -88,7 +88,7 @@ Pass one of these symbols to `generate_calendar_url`:
 
 `CalInvite::Providers::SUPPORTED_PROVIDERS` holds the full list programmatically.
 
-`CalInvite::Providers::IcsContent` is also available directly (not via `generate_calendar_url`) if you want raw `.ics` content without going through `Event#generate_calendar_url`'s caching path — see [ICS content and downloads](#ics-content-and-downloads).
+`CalInvite::Providers::IcsContent` is also available directly (not via `generate_calendar_url`) if you want raw `.ics` content without `Event#generate_calendar_url`'s validation — see [ICS content and downloads](#ics-content-and-downloads).
 
 ## `generate_calendar_url`
 
@@ -101,17 +101,17 @@ event.generate_calendar_url(provider, method: :publish)
 | `provider`| `Symbol` | required   | One of the provider symbols above (a String also works). Anything else raises `ArgumentError` listing the supported providers. `:ics_content` is accepted as a legacy alias of `:ics`. |
 | `method`  | `Symbol` | `:publish` | `:publish`, `:request`, `:cancel`, `:reply`, `:counter`, or `:decline_counter`. Only honored by `:ics`/`:ical` — ignored by URL-based providers. `:request` requires `organizer` to be set on the event; see below. `:cancel` requires reusing the original `uid` — see [Updating and cancelling invites](#updating-and-cancelling-invites). `:reply`/`:counter`/`:decline_counter` omit `RSVP=TRUE` on `ATTENDEE` lines — see [Attendee RSVP status and METHOD:REPLY](#attendee-rsvp-status-and-methodreply) and [Attendee-proposed reschedules (COUNTER)](#attendee-proposed-reschedules-counter). Note: `:decline_counter` renders as `METHOD:DECLINECOUNTER` (one word, per RFC 5545). |
 
-Results are cached (when caching is configured) keyed on all event attributes, `provider`, and `method` together — changing any of them produces a distinct cache entry.
+Output is generated fresh on every call; it is never cached (see [CACHING.md](CACHING.md)).
 
 ## ICS content and downloads
 
 Two ways to get raw `.ics` content:
 
 ```ruby
-# Via Event (goes through validation + caching)
+# Via Event (goes through validation)
 content = event.generate_calendar_url(:ics, method: :publish)
 
-# Directly via the provider (bypasses Event caching)
+# Directly via the provider (skips Event#validate!)
 content = CalInvite::Providers::Ics.new(event, method: :publish).generate
 ```
 
@@ -527,10 +527,10 @@ end
 
 | Option              | Type                                   | Default        | Notes |
 |---------------------|-----------------------------------------|----------------|-------|
-| `cache_store`       | `:memory_store`, `:null_store`, or any object implementing `read`/`write`/`delete` | `nil` (caching disabled) | See [CACHING.md](CACHING.md) for full detail. |
-| `cache_prefix`      | `String`                                | `'cal_invite'` | Namespaces cache keys. |
+| `cache_store`       | `:memory_store`, `:null_store`, or any object implementing `read`/`write`/`delete` | `nil`          | Backs the `CalInvite` cache helpers only — generated output is never cached. See [CACHING.md](CACHING.md). |
+| `cache_prefix`      | `String`                                | `'cal_invite'` | Namespaces cache helper keys. |
 | `cache_expires_in`  | `Integer` (seconds)                     | `86400` (24h)  | |
 | `webhook_secret`    | `String`                                | `nil`          | Reserved for webhook signature verification in consuming apps. |
 | `timezone`          | `String`                                | `'UTC'`        | Configuration-level default; per-event `timezone` attribute takes precedence for that event's display formatting. |
 
-Caching is disabled unless `cache_store` is set — without it, `generate_calendar_url` regenerates output on every call.
+`generate_calendar_url` regenerates output on every call, whether or not `cache_store` is set.
