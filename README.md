@@ -249,6 +249,34 @@ Add test(s) as necessary.
 
 Run all the tests before submitting: `bundle exec rake test`
 
+There are three ways to exercise the gem while working on a change:
+
+**1. Unit tests** (Minitest, under `test/cal_invite/`) — use these to lock a change in:
+
+```bash
+bundle exec rake test                                      # full suite (+ SimpleCov report in coverage/)
+bundle exec rake test TEST=test/cal_invite/event_test.rb   # a single file
+```
+
+**2. Interactive console** — `bin/console` opens IRB with your local `lib/` loaded, handy for eyeballing generated URLs and `.ics` output:
+
+```ruby
+event = CalInvite::Event.new(
+  title: "Demo",
+  start_time: Time.utc(2026, 11, 1, 15),
+  end_time: Time.utc(2026, 11, 1, 16),
+  timezone: "America/New_York",
+  organizer: { email: "me@example.com", name: "Me" },
+  attendees: ["guest@example.com"],
+  show_attendees: true
+)
+
+puts event.generate_calendar_url(:ics, method: :request)  # raw .ics content
+event.generate_calendar_url(:google)                      # provider URL
+```
+
+**3. Example Rails app** (`Example/calendar_app`) — for end-to-end checks in a real browser or mail client (downloading the `.ics`, RSVP buttons, etc.). Its Gemfile points at the published gem; to test unreleased changes, temporarily swap `gem "cal-invite"` for the commented-out `gem "cal-invite", path: "../../"` line and run `bundle install`. Revert the Gemfile and re-run `bundle install` before committing.
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/DashAPI-ai/cal-invite. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/DashAPI-ai/cal-invite/blob/master/CODE_OF_CONDUCT.md).
