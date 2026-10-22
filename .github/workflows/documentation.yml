@@ -6,7 +6,7 @@ on:
   # Keep this list in sync with rdoc_files in the Rakefile.
   push:
     branches: ["main"]
-    paths: &docs-paths
+    paths:
       - "README.md"
       - "CHANGELOG.md"
       - "CONFIGURATION.md"
@@ -22,7 +22,20 @@ on:
       - ".github/workflows/documentation.yml"
   pull_request:
     branches: ["main"]
-    paths: *docs-paths
+    paths:
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONFIGURATION.md"
+      - "CACHING.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "LICENSE.txt"
+      - "lib/**"
+      - "assets/**"
+      - "Rakefile"
+      - ".rdoc_options"
+      - "cal-invite.gemspec"
+      - ".github/workflows/documentation.yml"
   # Manual run from the Actions tab, on any branch, with no release needed.
   workflow_dispatch:
   # Called by main.yml on release tags.
