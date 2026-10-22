@@ -98,7 +98,7 @@ event.generate_calendar_url(provider, method: :publish)
 
 | Param     | Type     | Default    | Notes |
 |-----------|----------|------------|-------|
-| `provider`| `Symbol` | required   | One of the provider symbols above. |
+| `provider`| `Symbol` | required   | One of the provider symbols above (a String also works). Anything else raises `ArgumentError` listing the supported providers. `:ics_content` is accepted as a legacy alias of `:ics`. |
 | `method`  | `Symbol` | `:publish` | `:publish`, `:request`, `:cancel`, `:reply`, `:counter`, or `:decline_counter`. Only honored by `:ics`/`:ical` — ignored by URL-based providers. `:request` requires `organizer` to be set on the event; see below. `:cancel` requires reusing the original `uid` — see [Updating and cancelling invites](#updating-and-cancelling-invites). `:reply`/`:counter`/`:decline_counter` omit `RSVP=TRUE` on `ATTENDEE` lines — see [Attendee RSVP status and METHOD:REPLY](#attendee-rsvp-status-and-methodreply) and [Attendee-proposed reschedules (COUNTER)](#attendee-proposed-reschedules-counter). Note: `:decline_counter` renders as `METHOD:DECLINECOUNTER` (one word, per RFC 5545). |
 
 Results are cached (when caching is configured) keyed on all event attributes, `provider`, and `method` together — changing any of them produces a distinct cache entry.

@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.11] - 2026-10-22
+
+- `Event#generate_calendar_url` now validates the provider against `CalInvite::Providers::SUPPORTED_PROVIDERS` and raises `ArgumentError` naming the supported providers. Previously the name was passed to `const_get`, which fell back to top-level constants, so e.g. `:string` resolved Ruby's `String` and failed with a confusing `unknown keyword: :method`. `:ics_content` keeps working as a legacy alias of `:ics`. (#11)
+
 ## [v0.2.10] - 2026-10-22
 
 - **Breaking:** `Event.new` and `Event#update_attributes` now raise `ArgumentError` (`Unknown attribute(s): locaton`) for keys that aren't `Event` attributes, instead of silently ignoring them — so typos no longer drop data. Callers passing extra keys (e.g. a whole params hash) must slice them first. `update_attributes` checks every key before assigning, so a rejected call leaves the event unchanged. (#10)
