@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.12] - 2026-10-22
+
+- `organizer:` now accepts a plain email string (`organizer: "jane@example.com"`), like `attendees`. Previously only an `{ email:, name: }` hash worked; a string crashed `.ics` generation with `TypeError: no implicit conversion of Symbol into Integer`. String-keyed hashes (`{ "email" => ... }`) are now read too. (#12)
+
 ## [v0.2.11] - 2026-10-22
 
 - `Event#generate_calendar_url` now validates the provider against `CalInvite::Providers::SUPPORTED_PROVIDERS` and raises `ArgumentError` naming the supported providers. Previously the name was passed to `const_get`, which fell back to top-level constants, so e.g. `:string` resolved Ruby's `String` and failed with a confusing `unknown keyword: :method`. `:ics_content` keeps working as a legacy alias of `:ics`. (#11)

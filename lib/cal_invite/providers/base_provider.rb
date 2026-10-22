@@ -149,14 +149,19 @@ class BaseProvider
     "ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=#{partstat}#{rsvp}#{cn}:mailto:#{email}"
   end
 
-  # Format the ORGANIZER property for iCalendar output
+  # Format the ORGANIZER property for iCalendar output. Like attendees, the
+  # organizer may be a plain email string or an { email:, name: } hash.
   # @return [String, nil] The formatted ORGANIZER line, or nil if no organizer is set
   def organizer_line
-    return nil unless event.organizer && event.organizer[:email]
+    organizer = event.organizer
+    return nil unless organizer
 
-    name = event.organizer[:name]
+    email = attendee_email(organizer)
+    return nil if email.nil? || email.empty?
+
+    name = attendee_hash_value(organizer, :name)
     cn = name ? ";CN=#{quoted_param(name)}" : ""
-    "ORGANIZER#{cn}:mailto:#{event.organizer[:email]}"
+    "ORGANIZER#{cn}:mailto:#{email}"
   end
 
   # The value for the calendar-level METHOD property. RFC 5545 spells this

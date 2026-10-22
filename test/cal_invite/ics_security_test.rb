@@ -90,6 +90,11 @@ module CalInvite
       end
     end
 
+    def test_string_organizer_with_line_breaks_raises
+      error = assert_raises(ArgumentError) { build_event(organizer: "o@example.com#{INJECTION}").generate_calendar_url(:ics) }
+      assert_equal "ORGANIZER value must not contain line breaks", error.message
+    end
+
     def test_ical_and_ics_content_share_the_guard
       event = build_event(uid: "abc#{INJECTION}")
       assert_raises(ArgumentError) { event.generate_calendar_url(:ical) }
