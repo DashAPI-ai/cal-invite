@@ -51,5 +51,41 @@ module CalInvite
       assert_includes ics, "DTSTART;TZID=Europe/Paris:20261101T160000\r\n"
       assert_includes ics, "BEGIN:VTIMEZONE\r\nTZID:Europe/Paris\r\n"
     end
+
+    def with_configured_timezone(tz)
+      original = CalInvite.configuration.timezone
+      CalInvite.configuration.timezone = tz
+      yield
+    ensure
+      CalInvite.configuration.timezone = original
+    end
+
+    def test_configured_timezone_is_the_default
+      with_configured_timezone("America/New_York") do
+        event = build_event
+        assert_equal "America/New_York", event.timezone
+        assert_includes event.generate_calendar_url(:ics), "DTSTART;TZID=America/New_York:20261101T100000\r\n"
+      end
+    end
+
+    def test_explicit_timezone_beats_configured_default
+      with_configured_timezone("America/New_York") do
+        assert_equal "Europe/Paris", build_event(timezone: "Europe/Paris").timezone
+      end
+    end
+
+    def test_unknown_configured_timezone_is_rejected
+      with_configured_timezone("Mars/Base") do
+        assert_raises(ArgumentError) { build_event }
+      end
+    end
+
+    def test_defaults_to_utc_without_configuration
+      original = CalInvite.configuration
+      CalInvite.configuration = nil
+      assert_equal "UTC", build_event.timezone
+    ensure
+      CalInvite.configuration = original
+    end
   end
 end

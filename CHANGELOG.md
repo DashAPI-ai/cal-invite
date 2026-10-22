@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.17] - 2026-10-22
+
+- `CalInvite.configuration.timezone` is now the default `Event#timezone` when `timezone:` isn't passed; it was documented that way but ignored (events always defaulted to `'UTC'`). An explicit `timezone:` still wins, and an unknown configured zone makes `Event.new` raise `ArgumentError`. **Behavior change** for apps that set `config.timezone` to something other than `'UTC'`: their events now render in that zone. (#22)
+
 ## [v0.2.16] - 2026-10-22
 
 - Remove the cache helpers (`CalInvite.fetch_from_cache`, `write_to_cache`, `read_from_cache`, `clear_cache!`, `clear_event_cache!`, `clear_provider_cache!`) and the `CalInvite::Caching` module. They had never worked (every call raised `NoMethodError`), so no working code depended on them, and the gem itself no longer caches (0.2.14). `CACHING.md` is gone; the app-layer caching example moved to CONFIGURATION.md.
