@@ -56,5 +56,48 @@ module CalInvite
       )
       refute event.all_day
     end
+
+    def test_does_not_mutate_the_callers_attributes_hash
+      attributes = {
+        title: "Meeting",
+        start_time: Time.utc(2026, 11, 1, 15),
+        end_time: Time.utc(2026, 11, 1, 16),
+        timezone: "Europe/Paris",
+        show_attendees: true,
+        uid: "fixed-uid",
+        sequence: 2,
+        busy: false,
+        visibility: :private,
+        allow_counter: false
+      }
+      snapshot = attributes.dup
+
+      first = Event.new(attributes)
+      second = Event.new(attributes)
+
+      assert_equal snapshot, attributes
+      [first, second].each do |event|
+        assert_equal "Europe/Paris", event.timezone
+        assert_equal "fixed-uid", event.uid
+        assert_equal 2, event.sequence
+        assert_equal false, event.busy
+        assert_equal false, event.allow_counter
+      end
+    end
+
+    def test_accepts_string_keyed_attributes
+      event = Event.new(
+        "title" => "Meeting",
+        "start_time" => Time.utc(2026, 11, 1, 15),
+        "end_time" => Time.utc(2026, 11, 1, 16),
+        "timezone" => "Europe/Paris",
+        "busy" => false,
+        "uid" => "string-uid"
+      )
+
+      assert_equal "Europe/Paris", event.timezone
+      assert_equal false, event.busy
+      assert_equal "string-uid", event.uid
+    end
   end
 end
