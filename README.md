@@ -4,7 +4,7 @@
 
 Generate "add to calendar" links and `.ics` calendar invites from Ruby, for Google Calendar, Outlook, Outlook 365, Yahoo, Apple Calendar, and any client that reads iCalendar files.
 
-[![Gem Version](https://badge.fury.io/rb/cal-invite.svg)](https://badge.fury.io/rb/cal-invite)
+[![Gem Version](https://img.shields.io/gem/v/cal-invite)](https://rubygems.org/gems/cal-invite)
 ![Build Status](https://github.com/DashAPI-ai/cal-invite/actions/workflows/main.yml/badge.svg)
 ![License](https://img.shields.io/github/license/DashAPI-ai/cal-invite.svg)
 
