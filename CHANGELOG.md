@@ -1,5 +1,10 @@
 # Cal Invite
 
+## [v0.2.2] - 2026-10-22
+
+- Docs: README "Testing" section now covers the three ways to exercise the gem locally (`rake test` incl. single-file runs, `bin/console` with a working sample event, and the Example app's local-path Gemfile workflow).
+- Docs: removed `CLAUDE.md` in favor of `AGENTS.md`, merging in its newer guidance.
+
 ## [v0.2.1] - 2026-08-10
 
 - `:google` provider: honor `Event#attendees`/`show_attendees` (`add=`), `Event#timezone` (`ctz=`), `Event#rrule` (`recur=`), and `Event#busy` (`crm=BUSY`/`AVAILABLE`) in the generated Google Calendar URL — these were already modeled on `Event` for the ics providers but never wired into `:google`.
