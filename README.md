@@ -8,10 +8,7 @@ Generate "add to calendar" links and `.ics` calendar invites from Ruby, for Goog
 ![Build Status](https://github.com/DashAPI-ai/cal-invite/actions/workflows/main.yml/badge.svg)
 ![License](https://img.shields.io/github/license/DashAPI-ai/cal-invite.svg)
 
-- **One event, every calendar.** Describe an event once and get a URL or `.ics` content for each provider.
-- **Real email invites.** `method: :request` produces an RFC 5545 meeting request that Gmail, Outlook and Apple Mail show with Accept/Decline buttons. You can also send updates and cancellations that replace the original invite.
-- **Correct timezones.** A full `VTIMEZONE` for any IANA zone, with times converted properly.
-- **Safe with user input.** Values are escaped so end-user strings can't inject extra properties into an invite.
+You describe an event once and get a link or `.ics` content for each provider. With `method: :request`, the `.ics` is an RFC 5545 meeting request that Gmail, Outlook and Apple Mail show with Accept/Decline buttons, and later updates or cancellations replace the original invite. Any IANA timezone gets a full `VTIMEZONE` with correctly converted times. Attribute values are escaped, so end-user input can't add properties to an invite.
 
 ## Contents
 
@@ -147,15 +144,15 @@ attachments["invite.ics"] = {
 }
 ```
 
-Save `event.uid`. To reschedule or cancel later, rebuild the event with the **same `uid`** and a **higher `sequence`**, then send `method: :request` again (for a reschedule) or `method: :cancel`. See [Updating and cancelling invites](CONFIGURATION.md#updating-and-cancelling-invites). The [example Rails app](Example/calendar_app) has a working implementation.
+Save `event.uid`. To reschedule or cancel later, rebuild the event with the same `uid` and a higher `sequence`, then send `method: :request` again (for a reschedule) or `method: :cancel`. See [Updating and cancelling invites](CONFIGURATION.md#updating-and-cancelling-invites). The [example Rails app](Example/calendar_app) has a working implementation.
 
 ## Things to know
 
-- **Times are always UTC.** Pass UTC `Time`s for `start_time`/`end_time`. `timezone` only controls how the time is displayed. It must be `"UTC"` or an IANA name such as `"America/New_York"`, and defaults to `CalInvite.configuration.timezone` (`"UTC"`).
-- **`location` and `url` are separate.** Put the physical place in `location` and the video-call link in `url`. Each provider formats them its own way.
-- **Mistakes raise `ArgumentError`.** That covers a misspelled attribute (`locaton:`), an unknown timezone, an end time before the start time, and an unsupported provider.
-- **CalInvite only sends.** It generates links and invites, but it doesn't receive RSVP replies and can't set Google/Microsoft API-only options such as guest permissions. See [Tracking RSVPs](CONFIGURATION.md#tracking-rsvps-what-the-gem-does-and-doesnt-do).
-- **Nothing is cached.** Output is cheap to build, so it's generated fresh on every call.
+- Pass `start_time` and `end_time` as UTC `Time`s. `timezone` only controls how the time is displayed. It must be `"UTC"` or an IANA name such as `"America/New_York"`, and defaults to `CalInvite.configuration.timezone` (`"UTC"`).
+- Put the physical place in `location` and the video-call link in `url`. Each provider formats them its own way.
+- Invalid input raises `ArgumentError`: a misspelled attribute (`locaton:`), an unknown timezone, an end time before the start time, or an unsupported provider.
+- CalInvite generates links and invites but doesn't receive RSVP replies. It also can't set options that exist only in the Google and Microsoft APIs, such as guest permissions. See [Tracking RSVPs](CONFIGURATION.md#tracking-rsvps-what-the-gem-does-and-doesnt-do).
+- Output is cheap to build, so nothing is cached and it's generated fresh on every call.
 
 Global settings:
 
@@ -189,7 +186,7 @@ bin/console                                                # IRB with the local 
 
 To try unreleased changes in the [example Rails app](Example/calendar_app), switch its Gemfile to the commented-out `gem "cal-invite", path: "../../"` line and run `bundle install`. Switch it back before committing.
 
-**Releasing:** bump `lib/cal_invite/version.rb`, update `CHANGELOG.md`, and merge to `main`. Then push a `vX.Y.Z` tag. CI runs the tests, publishes the gem to RubyGems and deploys the docs.
+To release, bump `lib/cal_invite/version.rb`, update `CHANGELOG.md`, merge to `main`, and push a `vX.Y.Z` tag. CI then runs the tests, publishes the gem to RubyGems and deploys the docs.
 
 ## Contributing
 
