@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.9] - 2026-10-22
+
+- `Event` now raises `ArgumentError` when `end_time` isn't after `start_time` (RFC 5545 requires `DTEND` later than `DTSTART`; all-day events may end on the same date), and when a `multi_day_sessions` entry is missing a time or ends before it starts. Previously these produced nonsensical invites. (#9)
+
 ## [v0.2.8] - 2026-10-22
 
 - `Event.new` no longer mutates the attributes hash passed in. It used to `delete` `timezone`, `show_attendees`, `uid`, `sequence`, `busy`, `visibility`, `allow_counter`, `all_day` and `multi_day_sessions` from the caller's hash, so reusing it for a second event silently dropped them. (#8)

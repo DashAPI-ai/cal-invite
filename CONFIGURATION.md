@@ -28,7 +28,7 @@ All attributes are set via `CalInvite::Event.new(attributes)` or `event.update_a
 |------------------------|-----------------|----------------------------------------|---------|-------|
 | `title`                | `String`        | yes                                    | —       | Non-blank. |
 | `start_time`           | `Time`          | yes, unless `all_day` or using `multi_day_sessions` | — | Always pass UTC. |
-| `end_time`             | `Time`          | yes, unless `all_day` or using `multi_day_sessions` | — | Always pass UTC. |
+| `end_time`             | `Time`          | yes, unless `all_day` or using `multi_day_sessions` | — | Always pass UTC. Must be after `start_time` (`ArgumentError` otherwise); all-day events may end on the same date they start. |
 | `description`          | `String`        | no                                     | `nil`   | Plain text; combined with `notes` in provider output. |
 | `location`             | `String`        | no                                     | `nil`   | Physical location only. Kept separate from `url` so each provider formats it correctly. |
 | `url`                  | `String`        | no                                     | `nil`   | Virtual meeting link (Zoom, Meet, Teams, etc). Kept separate from `location`. |
@@ -38,7 +38,7 @@ All attributes are set via `CalInvite::Event.new(attributes)` or `event.update_a
 | `timezone`             | `String`        | no                                     | `'UTC'` | Controls display/formatting only — does not affect how `start_time`/`end_time` are interpreted. Must be `'UTC'` or an IANA identifier (e.g. `'America/New_York'`), which produces a correctly converted `DTSTART;TZID=...` plus a full `VTIMEZONE` block; anything else raises `ArgumentError`. See [Timezones and VTIMEZONE](#timezones-and-vtimezone). |
 | `notes`                | `String`        | no                                     | `nil`   | Appended to the description. |
 | `all_day`              | `Boolean`       | no                                     | `false` | When `true`, `start_time`/`end_time` validation is skipped. |
-| `multi_day_sessions`   | `Array<Hash>`   | no                                     | `[]`    | `[{ start_time:, end_time: }, ...]`. Used instead of `start_time`/`end_time` for multi-session events. |
+| `multi_day_sessions`   | `Array<Hash>`   | no                                     | `[]`    | `[{ start_time:, end_time: }, ...]`. Used instead of `start_time`/`end_time` for multi-session events. Each session needs both times, with `end_time` after `start_time`. |
 | `uid`                  | `String`        | no                                     | randomly generated, memoized per `Event` instance | Stable RFC 5545 identifier. **Must** be reused across calls when you send an update (`:request`) or cancellation (`:cancel`) for a previously sent invite — see [Updating and cancelling invites](#updating-and-cancelling-invites). |
 | `sequence`             | `Integer`       | no                                     | `0`     | RFC 5545 SEQUENCE. Increment it yourself each time you resend a `:request`/`:cancel` for the same `uid`. |
 | `geo`                  | `Array<Float>`, `Hash` | no                              | `nil`   | `[37.4595, -122.1418]` or `{ lat:, lng: }`. Emits `GEO:lat;lng` — lets Apple/Google Maps deep-link from the invite. |
