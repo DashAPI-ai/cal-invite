@@ -1,280 +1,198 @@
-# 📅 CalInvite
+# CalInvite
 
-A Ruby gem for generating calendar invitations across multiple calendar platforms with webhook support.
+Generate "add to calendar" links and `.ics` calendar invites from Ruby, for Google Calendar, Outlook, Outlook 365, Yahoo, Apple Calendar, and any client that reads iCalendar files.
 
 [![Gem Version](https://badge.fury.io/rb/cal-invite.svg)](https://badge.fury.io/rb/cal-invite)
 ![Build Status](https://github.com/DashAPI-ai/cal-invite/actions/workflows/main.yml/badge.svg)
-
 ![License](https://img.shields.io/github/license/DashAPI-ai/cal-invite.svg)
 
-## Compatibility
+- **One event, every calendar.** Describe an event once and get a URL or `.ics` content for each provider.
+- **Real email invites.** `method: :request` produces an RFC 5545 meeting request that Gmail, Outlook and Apple Mail show with Accept/Decline buttons. You can also send updates and cancellations that replace the original invite.
+- **Correct timezones.** A full `VTIMEZONE` for any IANA zone, with times converted properly.
+- **Safe with user input.** Values are escaped so end-user strings can't inject extra properties into an invite.
 
-- Ruby >= 3.0.0
-- Rails 6.0, 6.1, 7.0, 7.1, 8.0, 8.1
+## Contents
 
-## Supported Calendar Platforms
-
-Direct Integration:
-- Apple iCal (with proper timezone support)
-- Microsoft Outlook
-- Microsoft Outlook 365
-- Google Calendar
-- Yahoo Calendar
-- Standard .ics file generation
-
-Any calendar application that supports the iCalendar (.ics) standard should work, including but not limited to:
-- Proton Calendar
-- FastMail Calendar
-- Thunderbird Calendar
-- Zoho Calendar
-- Microsoft Teams Calendar
-- Zoom Calendar Integration
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Providers](#providers)
+- [More examples](#more-examples)
+- [Serving a downloadable .ics file](#serving-a-downloadable-ics-file)
+- [Sending email invites with RSVP](#sending-email-invites-with-rsvp)
+- [Things to know](#things-to-know)
+- [Upgrading to 0.3.0](#upgrading-to-030)
+- [Documentation](#documentation)
+- [Development](#development)
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Requires Ruby 3.0 or newer. It works with or without Rails, and supports Rails 6.0 through 8.1.
 
 ```ruby
-gem 'cal-invite'
+# Gemfile
+gem "cal-invite"
 ```
 
-And then execute:
 ```bash
-$ bundle install
+bundle install
 ```
 
-Or install it yourself as:
-```bash
-$ gem install cal-invite
-```
-
-## Usage
-
-### Basic Event Creation
-
-Important notes:
-- Always provide times in UTC
-- Use the timezone parameter to specify the display timezone
-- Location and URL are handled separately for better calendar integration
-
-For the full list of `Event` attributes, providers, and configuration options, see [CONFIGURATION.md](CONFIGURATION.md).
+## Quick start
 
 ```ruby
-# Create an event with physical location
+require "cal_invite"
+
 event = CalInvite::Event.new(
   title: "Team Meeting",
-  start_time: Time.current.utc,  # Always use UTC times
-  end_time: Time.current.utc + 2.hours,
-  description: "Weekly team sync",
-  location: "Conference Room A",  # Physical location
-  timezone: "America/New_York",  # Display timezone
-  attendees: ["person@example.com"],
-  show_attendees: true,
-  notes: "Please bring your laptop"
+  start_time: Time.utc(2026, 11, 2, 15, 0),   # always pass UTC
+  end_time:   Time.utc(2026, 11, 2, 16, 0),
+  timezone: "America/New_York",               # how the time is displayed
+  description: "Weekly sync",
+  location: "Conference Room A",              # physical place
+  url: "https://zoom.us/j/123456789"          # virtual meeting link
 )
 
-# Create an event with both physical and virtual locations
-event = CalInvite::Event.new(
-  title: "Hybrid Meeting",
-  start_time: Time.current.utc,
-  end_time: Time.current.utc + 2.hours,
-  description: "Weekly team sync",
-  location: "Conference Room A",  # Physical location
-  url: "https://zoom.us/j/123456789",  # Virtual meeting URL
-  timezone: "America/New_York",
-  attendees: ["person@example.com"],
+event.generate_calendar_url(:google)  # => "https://calendar.google.com/calendar/render?action=TEMPLATE&..."
+event.generate_calendar_url(:ics)     # => "BEGIN:VCALENDAR\r\n..." (.ics file content)
+```
+
+## Providers
+
+| Provider     | Returns | Notes |
+|--------------|---------|-------|
+| `:google`    | URL | Opens Google Calendar's "add event" page. |
+| `:outlook`   | URL | Outlook.com (personal accounts). |
+| `:office365` | URL | Outlook on the web for work/school (Microsoft 365) accounts. |
+| `:yahoo`     | URL | One URL per session for multi-day events, separated by newlines. |
+| `:ics`       | `.ics` content | Standard iCalendar file; works with Apple Calendar, Thunderbird, Proton, Fastmail and others. |
+| `:ical`      | `.ics` content | Same content as `:ics`; kept for Apple Calendar naming. |
+
+Only `:ics` and `:ical` support the `method:` option (`:publish` by default, also `:request`, `:cancel`, `:reply`, `:counter`, `:decline_counter`). Any other provider name raises `ArgumentError`.
+
+## More examples
+
+```ruby
+# Attendees: email strings, or hashes with a display name and RSVP status
+CalInvite::Event.new(
+  title: "Planning",
+  start_time: Time.utc(2026, 11, 2, 15), end_time: Time.utc(2026, 11, 2, 16),
+  attendees: ["bob@example.com", { email: "ada@example.com", name: "Ada", partstat: :accepted }],
   show_attendees: true
 )
 
 # All-day event
-event = CalInvite::Event.new(
-  title: "Company All-Day Event",
-  start_time: Date.today.beginning_of_day.utc,
-  end_time: Date.today.end_of_day.utc,
-  all_day: true,
-  timezone: "America/New_York"
+CalInvite::Event.new(title: "Company Offsite", start_time: Time.utc(2026, 12, 4), all_day: true)
+
+# Recurring event, with a reminder 15 minutes before
+CalInvite::Event.new(
+  title: "Standup",
+  start_time: Time.utc(2026, 11, 2, 14), end_time: Time.utc(2026, 11, 2, 14, 15),
+  timezone: "Europe/Paris",
+  rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
+  reminders: [15]
 )
 
-# Multi-day event
-event = CalInvite::Event.new(
+# Multi-day event with separate sessions
+CalInvite::Event.new(
   title: "Training Workshop",
   multi_day_sessions: [
-    {
-      start_time: Time.parse("2024-03-01 08:00:00 UTC"),
-      end_time: Time.parse("2024-03-01 17:00:00 UTC")
-    },
-    {
-      start_time: Time.parse("2024-03-02 09:00:00 UTC"),
-      end_time: Time.parse("2024-03-02 13:00:00 UTC")
-    }
+    { start_time: Time.utc(2026, 3, 1, 13), end_time: Time.utc(2026, 3, 1, 22) },
+    { start_time: Time.utc(2026, 3, 2, 14), end_time: Time.utc(2026, 3, 2, 18) }
   ],
-  description: "Advanced Ruby Training",
-  location: "Training Center",
-  url: "https://zoom.us/j/123456789",  # Virtual meeting URL kept separate
   timezone: "America/New_York",
-  notes: "Bring your own laptop"
+  location: "Training Center"
 )
-
-# Generate calendar URLs
-ical_url       = event.generate_calendar_url(:ical)
-google_url     = event.generate_calendar_url(:google)
-outlook_url    = event.generate_calendar_url(:outlook)
-outlook365_url = event.generate_calendar_url(:office365)
-yahoo_url      = event.generate_calendar_url(:yahoo)
 ```
 
-### Implementing ICS Downloads
+For a multi-day event, `:ics`, `:ical` and `:yahoo` produce one entry per session. Google and Outlook can only show one range, so they show the whole span, from the first session's start to the last session's end.
 
-To enable ICS file downloads in your application, you'll need to:
+Every attribute (`organizer`, `geo`, `busy`, `visibility`, `importance`, `calendar_name`, ...) is listed in [CONFIGURATION.md](CONFIGURATION.md#event-attributes).
 
-1. Create an endpoint that will handle the download request
-2. Generate the ICS content
-3. Send the file to the user
-
-Here's a basic example of the controller logic:
+## Serving a downloadable .ics file
 
 ```ruby
-# In your controller action
-def download_calendar
-  event = # ... your event creation logic ...
-  
-  content = CalInvite::Providers::Ics.new(event).generate
-  filename = "#{event.title.downcase.gsub(/[^0-9A-Za-z.\-]/, '_')}_#{Time.now.strftime('%Y%m%d')}.ics"
-  
-  send_data(
-    content,
-    filename: filename,
-    type: 'text/calendar; charset=UTF-8',
-    disposition: 'attachment'
+# app/controllers/events_controller.rb
+def calendar
+  event = CalInvite::Event.new(...)
+  download = CalInvite::Providers::IcsDownload.wrap_for_download(
+    event.generate_calendar_url(:ics), event.title
   )
+
+  send_data download[:content],
+            type: download[:headers]["Content-Type"],
+            filename: "#{CalInvite::Providers::IcsDownload.sanitize_filename(event.title)}.ics",
+            disposition: "attachment"
 end
 ```
 
-You can implement this in any controller and route that makes sense for your application's architecture.
+## Sending email invites with RSVP
 
-### Sending Email Meeting Invites (RSVP-capable)
-
-By default, a `.ics` attachment opens as a file in most mail clients. To get
-Gmail/Outlook/Apple Mail to render the message as an invite with Accept/Decline
-actions (like Luma or Google Calendar invites do), set an `organizer` on the
-event and pass `method: :request` when generating. Full walkthrough and all
-options in [CONFIGURATION.md](CONFIGURATION.md#email-meeting-invites-rsvp-capable).
-
-### ICS File Generation
-
-The gem provides two ways to generate ICS files:
-
-1. Direct content generation:
-```ruby
-event = CalInvite::Event.new(
-  title: "Meeting",
-  start_time: Time.current.utc,
-  end_time: Time.current.utc + 1.hour,
-  timezone: "America/New_York"
-)
-
-# Generate ICS content
-content = CalInvite::Providers::Ics.new(event).generate
-```
-
-2. Rails controller integration:
-```ruby
-# In your controller
-def download_ics
-  event = CalInvite::Event.new(
-    title: "Meeting",
-    start_time: Time.current.utc,
-    end_time: Time.current.utc + 1.hour,
-    timezone: "America/New_York"
-  )
-  
-  content = CalInvite::Providers::Ics.new(event).generate
-  filename = "#{event.title.downcase.gsub(/[^0-9A-Za-z.\-]/, '_')}_#{Time.now.strftime('%Y%m%d')}.ics"
-  
-  send_data(
-    content,
-    filename: filename,
-    type: 'text/calendar; charset=UTF-8',
-    disposition: 'attachment'
-  )
-end
-```
-
-### Important Notes
-
-1. Time Handling:
-   - Always provide times in UTC to the Event constructor
-   - Use the timezone parameter to specify the display timezone
-   - All-day events should use beginning_of_day.utc and end_of_day.utc
-
-2. Location and URL:
-   - Physical location goes in the `location` parameter
-   - Virtual meeting URL goes in the `url` parameter
-   - They are handled separately for better calendar integration
-
-3. ICS Files:
-   - Both Apple iCal and standard ICS files now properly handle timezones
-   - Attendees are properly formatted with RSVP options
-   - Virtual meeting URLs are properly separated from physical locations
-
-## Caching
-
-CalInvite doesn't cache anything. Generated URLs and `.ics` content are cheap to build and always fresh. The old `cache_store`/`cache_prefix`/`cache_expires_in` settings are deprecated no-ops (removed in 0.4.0). See [CONFIGURATION.md](CONFIGURATION.md#generate_calendar_url) for caching at your own layer, and for every other option.
-
-## Development
-
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Testing
-
-Add test(s) as necessary.
-
-Run all the tests before submitting: `bundle exec rake test`
-
-There are three ways to exercise the gem while working on a change:
-
-**1. Unit tests** (Minitest, under `test/cal_invite/`) — use these to lock a change in:
-
-```bash
-bundle exec rake test                                      # full suite (+ SimpleCov report in coverage/)
-bundle exec rake test TEST=test/cal_invite/event_test.rb   # a single file
-```
-
-**2. Interactive console** — `bin/console` opens IRB with your local `lib/` loaded, handy for eyeballing generated URLs and `.ics` output:
+A plain `.ics` attachment opens as a file. To have mail clients show it as a meeting invite with Accept/Decline buttons, you need three things: an `organizer`, `method: :request`, and a matching `method=REQUEST` on the attachment's content type.
 
 ```ruby
 event = CalInvite::Event.new(
-  title: "Demo",
-  start_time: Time.utc(2026, 11, 1, 15),
-  end_time: Time.utc(2026, 11, 1, 16),
-  timezone: "America/New_York",
-  organizer: { email: "me@example.com", name: "Me" },
+  title: "Design Review",
+  start_time: Time.utc(2026, 11, 2, 15), end_time: Time.utc(2026, 11, 2, 16),
+  organizer: { name: "Jane Doe", email: "jane@example.com" },
   attendees: ["guest@example.com"],
   show_attendees: true
 )
 
-puts event.generate_calendar_url(:ics, method: :request)  # raw .ics content
-event.generate_calendar_url(:google)                      # provider URL
+# In your ActionMailer method:
+attachments["invite.ics"] = {
+  mime_type: "text/calendar; method=REQUEST",
+  content: event.generate_calendar_url(:ics, method: :request)
+}
 ```
 
-**3. Example Rails app** (`Example/calendar_app`) — for end-to-end checks in a real browser or mail client (downloading the `.ics`, RSVP buttons, etc.). Its Gemfile points at the published gem; to test unreleased changes, temporarily swap `gem "cal-invite"` for the commented-out `gem "cal-invite", path: "../../"` line and run `bundle install`. Revert the Gemfile and re-run `bundle install` before committing.
+Save `event.uid`. To reschedule or cancel later, rebuild the event with the **same `uid`** and a **higher `sequence`**, then send `method: :request` again (for a reschedule) or `method: :cancel`. See [Updating and cancelling invites](CONFIGURATION.md#updating-and-cancelling-invites). The [example Rails app](Example/calendar_app) has a working implementation.
 
-## Contributing
+## Things to know
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/DashAPI-ai/cal-invite. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/DashAPI-ai/cal-invite/blob/master/CODE_OF_CONDUCT.md).
+- **Times are always UTC.** Pass UTC `Time`s for `start_time`/`end_time`. `timezone` only controls how the time is displayed. It must be `"UTC"` or an IANA name such as `"America/New_York"`, and defaults to `CalInvite.configuration.timezone` (`"UTC"`).
+- **`location` and `url` are separate.** Put the physical place in `location` and the video-call link in `url`. Each provider formats them its own way.
+- **Mistakes raise `ArgumentError`.** That covers a misspelled attribute (`locaton:`), an unknown timezone, an end time before the start time, and an unsupported provider.
+- **CalInvite only sends.** It generates links and invites, but it doesn't receive RSVP replies and can't set Google/Microsoft API-only options such as guest permissions. See [Tracking RSVPs](CONFIGURATION.md#tracking-rsvps-what-the-gem-does-and-doesnt-do).
+- **Nothing is cached.** Output is cheap to build, so it's generated fresh on every call.
+
+Global settings:
+
+```ruby
+# config/initializers/cal_invite.rb
+CalInvite.configure do |config|
+  config.timezone = "America/New_York"   # default for events that don't set one
+end
+```
+
+## Upgrading to 0.3.0
+
+0.3.0 is stricter. Unknown attributes, invalid timezones and invalid time ranges now raise `ArgumentError`, where 0.2.x silently produced a broken invite. The gem also no longer loads all of `active_support/core_ext`. In plain Ruby, `1.hour` and `Time.current` no longer work unless you require them yourself.
+
+The `cache_store`/`cache_prefix`/`cache_expires_in` settings and the top-level `::BaseProvider` constant are deprecated. They still work, but print a warning, and they'll be removed in 0.4.0. The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Documentation
 
-The documentation is spread across the README, [CONFIGURATION.md](CONFIGURATION.md), and the doc folder.
+- [CONFIGURATION.md](CONFIGURATION.md): every attribute, provider and option, plus guides for email invites, updates and cancellations, RSVP status, COUNTER proposals, and timezones.
+- [API reference](https://dashapi-ai.github.io/cal-invite/): generated from the YARD comments (`bundle exec rake rdoc` builds it locally).
+- [CHANGELOG.md](CHANGELOG.md): release history.
 
-The documentation can be generated using `bundle exec rake rdoc`
+## Development
+
+```bash
+bin/setup                                                  # install dependencies
+bundle exec rake test                                      # full suite (+ coverage report in coverage/)
+bundle exec rake test TEST=test/cal_invite/event_test.rb   # one file
+bin/console                                                # IRB with the local lib/ loaded
+```
+
+To try unreleased changes in the [example Rails app](Example/calendar_app), switch its Gemfile to the commented-out `gem "cal-invite", path: "../../"` line and run `bundle install`. Switch it back before committing.
+
+**Releasing:** bump `lib/cal_invite/version.rb`, update `CHANGELOG.md`, and merge to `main`. Then push a `vX.Y.Z` tag. CI runs the tests, publishes the gem to RubyGems and deploys the docs.
+
+## Contributing
+
+Bug reports and pull requests are welcome on [GitHub](https://github.com/DashAPI-ai/cal-invite). Please add tests for your change and run `bundle exec rake test` before opening a PR. To report a security issue, see [SECURITY.md](SECURITY.md). Everyone taking part in the project is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## Code of Conduct
-
-Everyone interacting in the Cal::Invite project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/DashAPI-ai/cal-invite/blob/master/CODE_OF_CONDUCT.md).
+Released under the [MIT License](https://opensource.org/licenses/MIT).
