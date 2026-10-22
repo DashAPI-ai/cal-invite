@@ -2,11 +2,11 @@
 
 # lib/cal_invite/configuration.rb
 # Configuration class for the CalInvite gem.
-# Handles all configurable options including cache settings, timezone, and webhook secrets.
+# Handles all configurable options: timezone and webhook secret.
 #
-# @attr_reader [ActiveSupport::Cache::Store, nil] cache_store The cache store to use
-# @attr_reader [String] cache_prefix The prefix to use for cache keys
-# @attr_reader [Integer] cache_expires_in The default cache expiration time in seconds
+# @attr_reader [ActiveSupport::Cache::Store, nil] cache_store Deprecated, unused; removed in 0.3.0
+# @attr_reader [String] cache_prefix Deprecated, unused; removed in 0.3.0
+# @attr_reader [Integer] cache_expires_in Deprecated, unused; removed in 0.3.0
 # @attr_reader [String, nil] webhook_secret The secret key for webhook verification
 # @attr_reader [String] timezone The default timezone for events
 module CalInvite
@@ -22,15 +22,13 @@ module CalInvite
       @timezone = 'UTC'
     end
 
-    # Sets the cache store backing the CalInvite cache helpers (CalInvite.fetch_from_cache etc.).
-    # Event#generate_calendar_url never caches its output.
+    # @deprecated CalInvite caches nothing, so this setting has no effect.
+    #   It warns, and will be removed in 0.3.0.
     #
     # @param store [Symbol, #read, #write, #delete] The cache store to use
     # @raise [ArgumentError] If an unsupported cache store is provided
-    #
-    # @example Set memory store
-    #   config.cache_store = :memory_store
     def cache_store=(store)
+      warn_deprecated_cache_setting(:cache_store)
       @cache_store = case store
       when :memory_store
         ActiveSupport::Cache::MemoryStore.new
@@ -47,17 +45,19 @@ module CalInvite
       end
     end
 
-    # Sets the prefix used for cache keys.
+    # @deprecated Has no effect; warns, and will be removed in 0.3.0.
     #
     # @param prefix [#to_s] The prefix to use for cache keys
     def cache_prefix=(prefix)
+      warn_deprecated_cache_setting(:cache_prefix)
       @cache_prefix = prefix.to_s
     end
 
-    # Sets the default cache expiration time.
+    # @deprecated Has no effect; warns, and will be removed in 0.3.0.
     #
     # @param duration [#to_i] The duration in seconds
     def cache_expires_in=(duration)
+      warn_deprecated_cache_setting(:cache_expires_in)
       @cache_expires_in = duration.to_i
     end
 
@@ -73,6 +73,14 @@ module CalInvite
     # @param tz [#to_s] The timezone identifier
     def timezone=(tz)
       @timezone = tz.to_s
+    end
+
+    private
+
+    def warn_deprecated_cache_setting(name)
+      warn "[cal_invite] Configuration##{name}= is deprecated and has no effect: " \
+           "CalInvite no longer caches anything. Remove it; it will be removed in 0.3.0.",
+           uplevel: 2
     end
   end
 end

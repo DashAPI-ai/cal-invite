@@ -217,11 +217,9 @@ end
    - Attendees are properly formatted with RSVP options
    - Virtual meeting URLs are properly separated from physical locations
 
-## Caching Support
+## Caching
 
-Generated URLs and `.ics` content are not cached: they're cheap to build and always fresh. `CalInvite.configure` still accepts a `cache_store` (e.g. `Rails.cache`) backing small prefixed cache helpers (`CalInvite.fetch_from_cache` etc.) you can use yourself.
-
-For why output isn't cached, how to cache it at your own layer, and the helper API, see the [Caching Guide](https://github.com/DashAPI-ai/cal-invite/blob/master/CACHING.md). For every other configuration option (`Event` attributes, providers, email invites), see [CONFIGURATION.md](CONFIGURATION.md).
+CalInvite doesn't cache anything. Generated URLs and `.ics` content are cheap to build and always fresh. The old `cache_store`/`cache_prefix`/`cache_expires_in` settings are deprecated no-ops (removed in 0.3.0). See [CONFIGURATION.md](CONFIGURATION.md#generate_calendar_url) for caching at your own layer, and for every other option.
 
 ## Development
 
@@ -269,7 +267,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/DashAP
 
 ## Documentation
 
-The documentation is spread across the README, [CONFIGURATION.md](CONFIGURATION.md), [CACHING.md](CACHING.md), and the doc folder.
+The documentation is spread across the README, [CONFIGURATION.md](CONFIGURATION.md), and the doc folder.
 
 The documentation can be generated using `bundle exec rake rdoc`
 
