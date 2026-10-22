@@ -85,6 +85,44 @@ module CalInvite
       end
     end
 
+    def test_rejects_end_time_before_or_equal_to_start_time
+      start = Time.utc(2026, 11, 1, 15)
+      [start - 3600, start].each do |end_time|
+        error = assert_raises(ArgumentError) { Event.new(title: "Meeting", start_time: start, end_time: end_time) }
+        assert_equal "End time must be after start time", error.message
+      end
+    end
+
+    def test_update_attributes_rejects_end_time_before_start_time
+      event = Event.new(title: "Meeting", start_time: Time.utc(2026, 11, 1, 15), end_time: Time.utc(2026, 11, 1, 16))
+      assert_raises(ArgumentError) { event.update_attributes(end_time: Time.utc(2026, 11, 1, 14)) }
+    end
+
+    def test_all_day_event_may_start_and_end_on_the_same_date
+      event = Event.new(title: "Holiday", all_day: true, start_time: Date.new(2026, 12, 25), end_time: Date.new(2026, 12, 25))
+      assert event.all_day
+      assert_raises(ArgumentError) do
+        Event.new(title: "Holiday", all_day: true, start_time: Date.new(2026, 12, 25), end_time: Date.new(2026, 12, 24))
+      end
+    end
+
+    def test_multi_day_sessions_must_be_complete_and_ordered
+      base = { title: "Workshop", start_time: Time.utc(2026, 3, 1, 8), end_time: Time.utc(2026, 3, 2, 13) }
+      good = { start_time: Time.utc(2026, 3, 1, 8), end_time: Time.utc(2026, 3, 1, 17) }
+
+      error = assert_raises(ArgumentError) do
+        Event.new(base.merge(multi_day_sessions: [good, { start_time: Time.utc(2026, 3, 2, 13), end_time: Time.utc(2026, 3, 2, 9) }]))
+      end
+      assert_equal "Session 2 end_time must be after start time", error.message
+
+      error = assert_raises(ArgumentError) do
+        Event.new(base.merge(multi_day_sessions: [{ start_time: Time.utc(2026, 3, 1, 8) }]))
+      end
+      assert_equal "Session 1 requires start_time and end_time", error.message
+
+      assert_equal 1, Event.new(base.merge(multi_day_sessions: [good])).multi_day_sessions.size
+    end
+
     def test_accepts_string_keyed_attributes
       event = Event.new(
         "title" => "Meeting",

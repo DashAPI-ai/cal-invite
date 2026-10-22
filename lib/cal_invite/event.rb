@@ -218,9 +218,31 @@ module CalInvite
         raise ArgumentError, "End time is required for non-all-day events" if end_time.nil?
       end
 
+      validate_time_order!(start_time, end_time, "End time")
+      multi_day_sessions.each_with_index do |session, index|
+        label = "Session #{index + 1}"
+        raise ArgumentError, "#{label} requires start_time and end_time" unless session[:start_time] && session[:end_time]
+
+        validate_time_order!(session[:start_time], session[:end_time], "#{label} end_time")
+      end
+
       unless CalInvite::IcalTimezone.valid?(timezone)
         raise ArgumentError, "Unknown timezone #{timezone.inspect}: use 'UTC' or an IANA identifier such as 'America/New_York'"
       end
+    end
+
+    # Raises unless the end comes after the start. RFC 5545 requires DTEND to be
+    # later than DTSTART; all-day events may start and end on the same date.
+    #
+    # @param start_at [Time, Date, nil] The start
+    # @param end_at [Time, Date, nil] The end
+    # @param label [String] What to call the end in the error message
+    # @raise [ArgumentError] If the end is before (or, for timed events, equal to) the start
+    def validate_time_order!(start_at, end_at, label)
+      return unless start_at && end_at
+      return if end_at > start_at || (all_day && end_at == start_at)
+
+      raise ArgumentError, "#{label} must be after start time"
     end
 
     # Checks if caching is enabled in the configuration.
