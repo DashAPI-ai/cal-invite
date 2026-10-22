@@ -1,5 +1,10 @@
 # Cal Invite
 
+## [v0.2.7] - 2026-10-22
+
+- **Breaking:** `Event` now validates `timezone` and raises `ArgumentError` unless it's `'UTC'` or an IANA identifier recognized by tzinfo (e.g. `'America/New_York'`). Previously an unrecognized value — including raw offsets like `'+01:00'` — produced `DTSTART;TZID=<value>` with no matching `VTIMEZONE` (invalid RFC 5545, and times shifted by the offset), and a `;`/`:` in it could inject parameters into the `TZID=` line. (#7)
+- `'UTC'` events now emit `Z`-suffixed `DTSTART`/`DTEND` (as already documented) instead of `TZID=UTC` with no `VTIMEZONE`.
+
 ## [v0.2.6] - 2026-10-22
 
 - `.ics` output (`:ics`, `:ical`, `IcsContent`) now folds content lines longer than 75 octets (CRLF + single space, RFC 5545 §3.1), never splitting a multi-byte UTF-8 character. Long descriptions and attendee lines previously exceeded the limit, which Outlook and some mail gateways can mangle or reject. (#6)

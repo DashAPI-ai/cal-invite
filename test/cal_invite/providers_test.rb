@@ -20,17 +20,18 @@ module CalInvite
     end
 
     def test_timezone_handling
-      # Test with different timezone offset
+      # Test with a non-UTC display timezone
       event = Event.new(
         title: "Test Meeting",
         start_time: Time.new(2024, 1, 1, 9, 0, 0, "+00:00"),
         end_time: Time.new(2024, 1, 1, 10, 0, 0, "+00:00"),
-        timezone: "+01:00"
+        timezone: "Europe/Paris"
       )
 
       url = event.generate_calendar_url(:google)
-      # Google Calendar expects UTC times
+      # Google Calendar expects UTC times, with the display zone in ctz
       assert_match %r{dates=20240101T090000Z/20240101T100000Z}, url
+      assert_match %r{ctz=Europe%2FParis}, url
     end
 
     def test_google_calendar_url
@@ -108,8 +109,9 @@ module CalInvite
       content = @event.generate_calendar_url(:ical)
       assert_match %r{BEGIN:VCALENDAR}, content
       assert_match %r{VERSION:2\.0}, content
-      assert_match %r{DTSTART;TZID=UTC:20240101T090000}, content
-      assert_match %r{DTEND;TZID=UTC:20240101T100000}, content
+      assert_match %r{DTSTART:20240101T090000Z}, content
+      assert_match %r{DTEND:20240101T100000Z}, content
+      refute_match %r{TZID=}, content
       assert_match %r{SUMMARY:Test Meeting}, content
       assert_match %r{LOCATION:Test Location}, content
       assert_match %r{URL:https://meet.test.com}, content
