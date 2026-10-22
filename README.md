@@ -4,7 +4,7 @@
 
 Generate "add to calendar" links and `.ics` calendar invites from Ruby, for Google Calendar, Outlook, Outlook 365, Yahoo, Apple Calendar, and any client that reads iCalendar files.
 
-[![Gem Version](https://badge.fury.io/rb/cal-invite.svg)](https://badge.fury.io/rb/cal-invite)
+[![Gem Version](https://img.shields.io/gem/v/cal-invite)](https://rubygems.org/gems/cal-invite)
 ![Build Status](https://github.com/DashAPI-ai/cal-invite/actions/workflows/main.yml/badge.svg)
 ![License](https://img.shields.io/github/license/DashAPI-ai/cal-invite.svg)
 
@@ -22,10 +22,11 @@ You describe an event once and get a link or `.ics` content for each provider. W
 - [Upgrading to 0.3.0](#upgrading-to-030)
 - [Documentation](#documentation)
 - [Development](#development)
+- [Sponsor](#sponsor)
 
 ## Installation
 
-Requires Ruby 3.0 or newer. It works with or without Rails, and supports Rails 6.0 through 8.1.
+CalInvite is published on [RubyGems](https://rubygems.org/gems/cal-invite). It requires Ruby 3.0 or newer. It works with or without Rails, and supports Rails 6.0 through 8.1.
 
 ```ruby
 # Gemfile
@@ -152,7 +153,7 @@ Save `event.uid`. To reschedule or cancel later, rebuild the event with the same
 - Put the physical place in `location` and the video-call link in `url`. Each provider formats them its own way.
 - Invalid input raises `ArgumentError`: a misspelled attribute (`locaton:`), an unknown timezone, an end time before the start time, or an unsupported provider.
 - CalInvite generates links and invites but doesn't receive RSVP replies. It also can't set options that exist only in the Google and Microsoft APIs, such as guest permissions. See [Tracking RSVPs](CONFIGURATION.md#tracking-rsvps-what-the-gem-does-and-doesnt-do).
-- Output is cheap to build, so nothing is cached and it's generated fresh on every call.
+- Output is cheap to build, so nothing is cached and it's generated fresh on every call. To cache it in your app, or answer repeat downloads with `304 Not Modified`, see [CACHING.md](CACHING.md).
 
 Global settings:
 
@@ -173,6 +174,7 @@ The `cache_store`/`cache_prefix`/`cache_expires_in` settings and the top-level `
 
 - [CONFIGURATION.md](CONFIGURATION.md): every attribute, provider and option, plus guides for email invites, updates and cancellations, RSVP status, COUNTER proposals, and timezones.
 - [API reference](https://dashapi-ai.github.io/cal-invite/): generated from the YARD comments (`bundle exec rake rdoc` builds it locally).
+- [CACHING.md](CACHING.md): caching output in plain Ruby, Rails, Sinatra, Hanami and Grape, including HTTP caching for `.ics` feeds.
 - [CHANGELOG.md](CHANGELOG.md): release history.
 
 ## Development
@@ -191,6 +193,17 @@ To release, bump `lib/cal_invite/version.rb`, update `CHANGELOG.md`, merge to `m
 ## Contributing
 
 Bug reports and pull requests are welcome on [GitHub](https://github.com/DashAPI-ai/cal-invite). Please add tests for your change and run `bundle exec rake test` before opening a PR. To report a security issue, see [SECURITY.md](SECURITY.md). Everyone taking part in the project is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
+
+## Sponsor
+
+CalInvite is sponsored by [DashAPI](https://dashapi.ai).
+
+<a href="https://dashapi.ai">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/sponsors/dashapi-logo-dark.svg">
+    <img src="assets/sponsors/dashapi-logo-light.svg" alt="DashAPI" width="140">
+  </picture>
+</a>
 
 ## License
 
