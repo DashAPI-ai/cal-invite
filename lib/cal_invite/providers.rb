@@ -25,7 +25,7 @@ end
 
 # Deprecated top-level alias, kept for one release so code that referenced
 # ::BaseProvider keeps working. Skipped if the host app defines its own.
-# Remove in 0.3.0.
+# Remove in 0.4.0.
 unless Object.const_defined?(:BaseProvider, false)
   BaseProvider = CalInvite::Providers::BaseProvider
   Object.deprecate_constant(:BaseProvider)
