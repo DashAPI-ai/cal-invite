@@ -196,5 +196,36 @@ module CalInvite
       assert_includes ics, "TZOFFSETFROM:-0400\r\nTZOFFSETTO:-0500\r\nTZNAME:EST"
       assert_includes ics, "TZOFFSETFROM:-0500\r\nTZOFFSETTO:-0400\r\nTZNAME:EDT"
     end
+
+    def test_ics_family_providers_produce_identical_content
+      event = Event.new(
+        title: "Sync",
+        start_time: @start_time,
+        end_time: @end_time,
+        timezone: "America/New_York",
+        organizer: { email: "org@example.com", name: "Org" },
+        attendees: ["test@example.com"],
+        show_attendees: true,
+        description: "Agenda",
+        notes: "Bring laptop"
+      )
+      strip_dtstamp = ->(ics) { ics.gsub(/^DTSTAMP:.*$/, "") }
+      expected = strip_dtstamp.call(Providers::Ics.new(event, method: :request).generate)
+
+      assert_includes expected, "BEGIN:VTIMEZONE"
+      assert_includes expected, "METHOD:REQUEST"
+      [Providers::Ical, Providers::IcsContent].each do |klass|
+        assert_equal expected, strip_dtstamp.call(klass.new(event, method: :request).generate), klass.name
+      end
+    end
+
+    def test_ics_family_all_day_event_without_times
+      event = Event.new(title: "Holiday", all_day: true)
+      today = Time.now.strftime("%Y%m%d")
+
+      [:ics, :ical].each do |provider|
+        assert_match %r{DTSTART;VALUE=DATE:#{today}}, event.generate_calendar_url(provider)
+      end
+    end
   end
 end
