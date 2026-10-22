@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.13] - 2026-10-22
+
+- `BaseProvider` moved to `CalInvite::Providers::BaseProvider`, so the gem no longer owns a top-level constant that can collide with a host app's own `BaseProvider`. `::BaseProvider` remains as a deprecated alias until 0.3.0 (Ruby prints `constant ::BaseProvider is deprecated` when deprecation warnings are enabled, e.g. `RUBYOPT=-W:deprecated`); it isn't defined at all if the app already has a `BaseProvider`. (#13)
+
 ## [v0.2.12] - 2026-10-22
 
 - `organizer:` now accepts a plain email string (`organizer: "jane@example.com"`), like `attendees`. Previously only an `{ email:, name: }` hash worked; a string crashed `.ics` generation with `TypeError: no implicit conversion of Symbol into Integer`. String-keyed hashes (`{ "email" => ... }`) are now read too. (#12)

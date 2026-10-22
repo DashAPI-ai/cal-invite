@@ -22,3 +22,11 @@ module CalInvite
     autoload :Ics, 'cal_invite/providers/ics'
   end
 end
+
+# Deprecated top-level alias, kept for one release so code that referenced
+# ::BaseProvider keeps working. Skipped if the host app defines its own.
+# Remove in 0.3.0.
+unless Object.const_defined?(:BaseProvider, false)
+  BaseProvider = CalInvite::Providers::BaseProvider
+  Object.deprecate_constant(:BaseProvider)
+end
