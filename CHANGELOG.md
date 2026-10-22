@@ -1,5 +1,10 @@
 # Cal Invite
 
+## [v0.2.4] - 2026-10-22
+
+- `:ical` provider and `CalInvite::Providers::IcsContent` now delegate to the `:ics` generator, so all three produce identical RFC 5545 content. `IcsContent` previously emitted UTC-only times with no `VTIMEZONE`, ignored `notes`, and didn't support all-day events; `:ical` differed from `:ics` in property order and `PRODID`. (#4)
+- `:ics` all-day events without `start_time`/`end_time` now default to today (one-day span), matching the previous `:ical` behavior instead of raising.
+
 ## [v0.2.3] - 2026-10-22
 
 - Fix non-UTC timezones under tzinfo 1.x (Rails/ActiveSupport 6.0): `:ics`/`:ical` raised `NoMethodError` (`to_local`) for any non-UTC `timezone`, and `VTIMEZONE` was silently omitted. `IcalTimezone` now only uses APIs shared by tzinfo 1.2+ and 2.x; output is unchanged on tzinfo 2. (#17)

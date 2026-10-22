@@ -7,6 +7,9 @@ module CalInvite
     # This provider generates ICS files that are compatible with most calendar applications.
     # Supports all-day events, regular events, and multi-day sessions with proper timezone handling.
     #
+    # This is the single RFC 5545 generator for the gem: {Ical} and {IcsContent}
+    # are subclasses kept for their public names and produce identical output.
+    #
     # @example Creating a regular event ICS file
     #   event = CalInvite::Event.new(
     #     title: "Team Meeting",
@@ -72,15 +75,18 @@ module CalInvite
       private
 
       # Generates an all-day event component (VEVENT) with appropriate formatting.
+      # Defaults to today (and a one-day span) when start/end times are omitted.
       #
       # @return [Array<String>] Array of iCalendar format lines for the all-day event
       def generate_all_day_event
+        start_date = event.start_time || Time.now
+        end_date = event.end_time || (start_date + 86400)
         vevent = [
           "BEGIN:VEVENT",
           "UID:#{event.uid}",
           "DTSTAMP:#{format_timestamp(Time.now.utc)}",
-          "DTSTART;VALUE=DATE:#{format_date(event.start_time)}",
-          "DTEND;VALUE=DATE:#{format_date(event.end_time)}",
+          "DTSTART;VALUE=DATE:#{format_date(start_date)}",
+          "DTEND;VALUE=DATE:#{format_date(end_date)}",
           "SUMMARY:#{escape_text(event.title)}"
         ]
         add_optional_fields(vevent)
