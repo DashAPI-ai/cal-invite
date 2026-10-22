@@ -2,10 +2,11 @@ name: Documentation
 
 on:
   # Deploys on their own when a file RDoc renders changes on main.
+  # Pull requests that change these files only build the docs (no deploy).
   # Keep this list in sync with rdoc_files in the Rakefile.
   push:
     branches: ["main"]
-    paths:
+    paths: &docs-paths
       - "README.md"
       - "CHANGELOG.md"
       - "CONFIGURATION.md"
@@ -19,6 +20,9 @@ on:
       - ".rdoc_options"
       - "cal-invite.gemspec"
       - ".github/workflows/documentation.yml"
+  pull_request:
+    branches: ["main"]
+    paths: *docs-paths
   # Manual run from the Actions tab, on any branch, with no release needed.
   workflow_dispatch:
   # Called by main.yml on release tags.
@@ -36,10 +40,10 @@ permissions:
   id-token: write
 
 concurrency:
-  # Queue deploys instead of cancelling them, so a docs run from main cannot
-  # cancel an in-flight release deploy.
-  group: "pages"
-  cancel-in-progress: false
+  # Deploys queue instead of cancelling, so a docs run from main cannot cancel
+  # an in-flight release deploy. PR build checks cancel superseded runs.
+  group: ${{ github.event_name == 'pull_request' && format('docs-check-{0}', github.ref) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-and-deploy:
@@ -84,17 +88,22 @@ jobs:
         bundle exec rake rdoc
         cp -R assets doc/
 
+    # Pull requests only build the docs, so a broken RDoc build fails before merge.
     - name: Setup Pages
+      if: github.event_name != 'pull_request'
       uses: actions/configure-pages@v5
 
     - name: Upload artifact
+      if: github.event_name != 'pull_request'
       uses: actions/upload-pages-artifact@v3
       with:
         path: 'doc/'
 
     - name: Deploy to GitHub Pages
+      if: github.event_name != 'pull_request'
       id: deployment
       uses: actions/deploy-pages@v4
 
     - name: Output URL
+      if: github.event_name != 'pull_request'
       run: echo "Deployed to ${{ steps.deployment.outputs.page_url }}"
