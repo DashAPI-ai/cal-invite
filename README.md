@@ -1,5 +1,7 @@
 # CalInvite
 
+![CalInvite: calendar invitations for Ruby. Google, Outlook, Apple, Yahoo, .ics](assets/social/cal-invite-github.webp)
+
 Generate "add to calendar" links and `.ics` calendar invites from Ruby, for Google Calendar, Outlook, Outlook 365, Yahoo, Apple Calendar, and any client that reads iCalendar files.
 
 [![Gem Version](https://badge.fury.io/rb/cal-invite.svg)](https://badge.fury.io/rb/cal-invite)
