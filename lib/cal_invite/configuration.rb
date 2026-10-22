@@ -17,7 +17,7 @@ module CalInvite
     def initialize
       @cache_store = nil
       @cache_prefix = 'cal_invite'
-      @cache_expires_in = 24.hours # now this will work with active_support loaded
+      @cache_expires_in = 24 * 60 * 60
       @webhook_secret = nil
       @timezone = 'UTC'
     end

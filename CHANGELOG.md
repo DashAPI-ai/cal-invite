@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.15] - 2026-10-22
+
+- Requiring `cal_invite` no longer loads all of `active_support/core_ext`, so it stops monkey-patching core classes (`Integer#hours`, `Object#blank?`, `String#squish`, ...) in non-Rails apps. The gem now loads only `active_support` and `active_support/concern`; `ActiveSupport::Cache` is autoloaded only when `cache_store = :memory_store`/`:null_store` is used (on ActiveSupport < 8 that loads some core extensions, as before). Plain-Ruby code that relied on `cal_invite` loading those extensions must `require "active_support/core_ext"` (or the specific file) itself; Rails apps are unaffected. `Configuration#cache_expires_in` now defaults to `86400` (Integer) instead of `24.hours` (same value). This also lets the gem load with ActiveSupport 6.0 on Ruby 4.0, where the blanket require failed on the no-longer-default `benchmark` gem. (#15)
+
 ## [v0.2.14] - 2026-10-22
 
 - `Event#generate_calendar_url` no longer caches its output in `CalInvite.configuration.cache_store`, and `update_attributes` no longer calls `delete_matched("cal_invite:event:*")`, which wiped every event's cached output. The cache ignored `cache_prefix`, almost never hit (keys included the random auto-generated `uid`), froze `.ics` `DTSTAMP`, and cost more than regenerating. Output is unchanged; nothing to migrate. The `cache_store` setting and the `CalInvite.fetch_from_cache`/`write_to_cache`/`read_from_cache`/`clear_*` helpers remain. See CACHING.md. (#14)
