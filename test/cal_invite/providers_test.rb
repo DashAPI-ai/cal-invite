@@ -242,6 +242,23 @@ module CalInvite
       end
     end
 
+    def test_providers_inherit_from_namespaced_base_provider
+      %i[Google Outlook Office365 Yahoo Ics Ical IcsContent].each do |name|
+        assert_operator Providers.const_get(name), :<, Providers::BaseProvider, name
+      end
+    end
+
+    def test_top_level_base_provider_is_a_deprecated_alias
+      deprecated, Warning[:deprecated] = Warning[:deprecated], true
+      alias_class = nil
+      _, stderr = capture_io { alias_class = Object.const_get(:BaseProvider) }
+
+      assert_same Providers::BaseProvider, alias_class
+      assert_match(/constant ::BaseProvider is deprecated/, stderr)
+    ensure
+      Warning[:deprecated] = deprecated
+    end
+
     def test_unsupported_provider_raises_a_clear_error
       [:string, :base_provider, :ics_download, "nope"].each do |provider|
         error = assert_raises(ArgumentError, provider.inspect) { @event.generate_calendar_url(provider) }
