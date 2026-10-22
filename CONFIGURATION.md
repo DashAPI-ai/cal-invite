@@ -335,10 +335,8 @@ A working reference implementation of this whole pattern — a `Meeting` model
 persisting `uid`/`sequence`, and controller actions that send/reschedule/cancel
 — lives in [`Example/calendar_app`](Example/calendar_app): see
 `app/models/meeting.rb` and `app/controllers/meetings_controller.rb`. It
-depends on the attendee-hash/`uid`/`sequence` features documented here, so it
-needs whatever gem version ships those (0.2.0+) — the example app's `Gemfile`
-tracks the published gem, so point it at `path: "../.."` locally if you want
-to run this demo before that release is out.
+depends on the attendee-hash/`uid`/`sequence` features documented here, which
+shipped in 0.2.0, so it runs against the published gem.
 
 ## Tracking RSVPs: what the gem does and doesn't do
 
@@ -531,4 +529,4 @@ end
 | `webhook_secret`    | `String`                                | `nil`          | Reserved for webhook signature verification in consuming apps. |
 | `timezone`          | `String`                                | `'UTC'`        | Default `timezone` for events created without one; an explicit per-event `timezone:` wins. Validated like any event timezone, so an unknown value makes `Event.new` raise `ArgumentError`. |
 
-`cache_store`, `cache_prefix` and `cache_expires_in` are deprecated and have no effect. Setting one prints a warning, and they'll be removed in 0.3.0, so delete them from your initializer.
+`cache_store`, `cache_prefix` and `cache_expires_in` are deprecated and have no effect. Setting one prints a warning, and they'll be removed in 0.4.0, so delete them from your initializer.

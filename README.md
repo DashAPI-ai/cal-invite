@@ -219,7 +219,7 @@ end
 
 ## Caching
 
-CalInvite doesn't cache anything. Generated URLs and `.ics` content are cheap to build and always fresh. The old `cache_store`/`cache_prefix`/`cache_expires_in` settings are deprecated no-ops (removed in 0.3.0). See [CONFIGURATION.md](CONFIGURATION.md#generate_calendar_url) for caching at your own layer, and for every other option.
+CalInvite doesn't cache anything. Generated URLs and `.ics` content are cheap to build and always fresh. The old `cache_store`/`cache_prefix`/`cache_expires_in` settings are deprecated no-ops (removed in 0.4.0). See [CONFIGURATION.md](CONFIGURATION.md#generate_calendar_url) for caching at your own layer, and for every other option.
 
 ## Development
 

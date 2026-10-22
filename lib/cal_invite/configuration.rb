@@ -4,9 +4,9 @@
 # Configuration class for the CalInvite gem.
 # Handles all configurable options: timezone and webhook secret.
 #
-# @attr_reader [ActiveSupport::Cache::Store, nil] cache_store Deprecated, unused; removed in 0.3.0
-# @attr_reader [String] cache_prefix Deprecated, unused; removed in 0.3.0
-# @attr_reader [Integer] cache_expires_in Deprecated, unused; removed in 0.3.0
+# @attr_reader [ActiveSupport::Cache::Store, nil] cache_store Deprecated, unused; removed in 0.4.0
+# @attr_reader [String] cache_prefix Deprecated, unused; removed in 0.4.0
+# @attr_reader [Integer] cache_expires_in Deprecated, unused; removed in 0.4.0
 # @attr_reader [String, nil] webhook_secret The secret key for webhook verification
 # @attr_reader [String] timezone The default timezone for events
 module CalInvite
@@ -23,7 +23,7 @@ module CalInvite
     end
 
     # @deprecated CalInvite caches nothing, so this setting has no effect.
-    #   It warns, and will be removed in 0.3.0.
+    #   It warns, and will be removed in 0.4.0.
     #
     # @param store [Symbol, #read, #write, #delete] The cache store to use
     # @raise [ArgumentError] If an unsupported cache store is provided
@@ -45,7 +45,7 @@ module CalInvite
       end
     end
 
-    # @deprecated Has no effect; warns, and will be removed in 0.3.0.
+    # @deprecated Has no effect; warns, and will be removed in 0.4.0.
     #
     # @param prefix [#to_s] The prefix to use for cache keys
     def cache_prefix=(prefix)
@@ -53,7 +53,7 @@ module CalInvite
       @cache_prefix = prefix.to_s
     end
 
-    # @deprecated Has no effect; warns, and will be removed in 0.3.0.
+    # @deprecated Has no effect; warns, and will be removed in 0.4.0.
     #
     # @param duration [#to_i] The duration in seconds
     def cache_expires_in=(duration)
@@ -79,7 +79,7 @@ module CalInvite
 
     def warn_deprecated_cache_setting(name)
       warn "[cal_invite] Configuration##{name}= is deprecated and has no effect: " \
-           "CalInvite no longer caches anything. Remove it; it will be removed in 0.3.0.",
+           "CalInvite no longer caches anything. Remove it; it will be removed in 0.4.0.",
            uplevel: 2
     end
   end

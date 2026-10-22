@@ -1,81 +1,53 @@
 # Cal Invite
 
-## [v0.2.18] - 2026-10-22
+## [v0.3.0] - 2026-10-22
 
-- Multi-day events no longer need top-level `start_time`/`end_time`: `Event#start_time`/`#end_time` default to the earliest session start and latest session end, so the README's multi-day example works (it raised `Start time is required for non-all-day events`). `:google`, `:outlook` and `:office365`, which can only express one range, now show the overall span; `:ics`/`:ical`/`:yahoo` still emit one entry per session. Explicit `start_time`/`end_time` still win, and the span is computed on read, so it follows `update_attributes(multi_day_sessions: ...)`. (#24)
+### Upgrading from 0.2.x
 
-## [v0.2.17] - 2026-10-22
+These changes can break existing callers:
 
-- `CalInvite.configuration.timezone` is now the default `Event#timezone` when `timezone:` isn't passed; it was documented that way but ignored (events always defaulted to `'UTC'`). An explicit `timezone:` still wins, and an unknown configured zone makes `Event.new` raise `ArgumentError`. **Behavior change** for apps that set `config.timezone` to something other than `'UTC'`: their events now render in that zone. (#22)
+- **Unknown `Event` attributes raise.** `Event.new` and `Event#update_attributes` raise `ArgumentError` (`Unknown attribute(s): locaton`) for keys that aren't `Event` attributes, instead of silently ignoring them. If you pass a whole params hash, slice it first. A rejected `update_attributes` leaves the event unchanged. (#10)
+- **`timezone` is validated.** It must be `'UTC'` or an IANA identifier known to tzinfo (e.g. `'America/New_York'`); anything else, including raw offsets like `'+01:00'`, raises `ArgumentError`. Such values previously produced invalid `.ics` (a `TZID=` with no `VTIMEZONE`, times shifted by the offset) and could inject parameters. (#7)
+- **Time order is validated.** `ArgumentError` when `end_time` isn't after `start_time` (all-day events may end on the same date), or a `multi_day_sessions` entry is missing a time or ends before it starts. (#9)
+- **Provider names are validated.** `generate_calendar_url` raises `ArgumentError` listing the supported providers for anything outside `CalInvite::Providers::SUPPORTED_PROVIDERS` (`:ics_content` still works as an alias of `:ics`). Previously e.g. `:string` resolved Ruby's `String` and failed confusingly. (#11)
+- **`config.timezone` is now honored** as the default `Event#timezone` when `timezone:` isn't passed, as documented. If you set it to something other than `'UTC'`, your events now render in that zone. An explicit `timezone:` still wins. (#22)
+- **No more blanket `active_support/core_ext`.** Requiring `cal_invite` no longer monkey-patches core classes (`Integer#hours`, `Object#blank?`, `String#squish`, ...) in non-Rails apps. Plain-Ruby code that used those only because `cal_invite` loaded them must `require "active_support/core_ext"` (or the specific file). Rails apps are unaffected. This also lets the gem load with ActiveSupport 6.0 on Ruby 4.0. (#15)
 
-## [v0.2.16] - 2026-10-22
+### Removed
 
-- Remove the cache helpers (`CalInvite.fetch_from_cache`, `write_to_cache`, `read_from_cache`, `clear_cache!`, `clear_event_cache!`, `clear_provider_cache!`) and the `CalInvite::Caching` module. They had never worked (every call raised `NoMethodError`), so no working code depended on them, and the gem itself no longer caches (0.2.14). `CACHING.md` is gone; the app-layer caching example moved to CONFIGURATION.md.
-- Deprecate `Configuration#cache_store=`, `#cache_prefix=` and `#cache_expires_in=`: they now have no effect and print a warning pointing at the calling line, but still store the value (so e.g. `CalInvite.configuration.cache_store.clear` in a test setup keeps working). Remove them from your initializer; they'll be removed in 0.3.0. (#32)
+- **Output caching.** `generate_calendar_url` builds its output fresh on every call and never touches a cache store; `update_attributes` no longer wipes every event's cache entries. The cache ignored `cache_prefix`, almost never hit, froze `.ics` `DTSTAMP`, and cost more than regenerating. Output is unchanged. To cache anyway, do it in your app; CONFIGURATION.md has an example. (#14)
+- **Cache helpers.** `CalInvite.fetch_from_cache`, `write_to_cache`, `read_from_cache`, `clear_cache!`, `clear_event_cache!`, `clear_provider_cache!` and `CalInvite::Caching` are gone. They had never worked (every call raised `NoMethodError`). `CACHING.md` is gone too. (#32)
 
-## [v0.2.15] - 2026-10-22
+### Deprecated (removed in 0.4.0)
 
-- Requiring `cal_invite` no longer loads all of `active_support/core_ext`, so it stops monkey-patching core classes (`Integer#hours`, `Object#blank?`, `String#squish`, ...) in non-Rails apps. The gem now loads only `active_support` and `active_support/concern`; `ActiveSupport::Cache` is autoloaded only when `cache_store = :memory_store`/`:null_store` is used (on ActiveSupport < 8 that loads some core extensions, as before). Plain-Ruby code that relied on `cal_invite` loading those extensions must `require "active_support/core_ext"` (or the specific file) itself; Rails apps are unaffected. `Configuration#cache_expires_in` now defaults to `86400` (Integer) instead of `24.hours` (same value). This also lets the gem load with ActiveSupport 6.0 on Ruby 4.0, where the blanket require failed on the no-longer-default `benchmark` gem. (#15)
+- **`config.cache_store=`, `cache_prefix=`, `cache_expires_in=`** have no effect. They print `warning: [cal_invite] Configuration#cache_store= is deprecated and has no effect ...` pointing at your initializer line, but still store the value, so code that reads them keeps working. Delete them from your initializer. (#32)
+- **`::BaseProvider`.** The provider base class is now `CalInvite::Providers::BaseProvider`, so the gem no longer owns a top-level constant that can collide with your app's. `::BaseProvider` remains as an alias (not defined at all if your app has its own `BaseProvider`). Ruby prints `constant ::BaseProvider is deprecated` when deprecation warnings are enabled (e.g. `RUBYOPT=-W:deprecated`). (#13)
 
-## [v0.2.14] - 2026-10-22
+### Security
 
-- `Event#generate_calendar_url` no longer caches its output in `CalInvite.configuration.cache_store`, and `update_attributes` no longer calls `delete_matched("cal_invite:event:*")`, which wiped every event's cached output. The cache ignored `cache_prefix`, almost never hit (keys included the random auto-generated `uid`), froze `.ics` `DTSTAMP`, and cost more than regenerating. Output is unchanged; nothing to migrate. The `cache_store` setting and the `CalInvite.fetch_from_cache`/`write_to_cache`/`read_from_cache`/`clear_*` helpers remain. See CACHING.md. (#14)
-
-## [v0.2.13] - 2026-10-22
-
-- `BaseProvider` moved to `CalInvite::Providers::BaseProvider`, so the gem no longer owns a top-level constant that can collide with a host app's own `BaseProvider`. `::BaseProvider` remains as a deprecated alias until 0.3.0 (Ruby prints `constant ::BaseProvider is deprecated` when deprecation warnings are enabled, e.g. `RUBYOPT=-W:deprecated`); it isn't defined at all if the app already has a `BaseProvider`. (#13)
-
-## [v0.2.12] - 2026-10-22
-
-- `organizer:` now accepts a plain email string (`organizer: "jane@example.com"`), like `attendees`. Previously only an `{ email:, name: }` hash worked; a string crashed `.ics` generation with `TypeError: no implicit conversion of Symbol into Integer`. String-keyed hashes (`{ "email" => ... }`) are now read too. (#12)
-
-## [v0.2.11] - 2026-10-22
-
-- `Event#generate_calendar_url` now validates the provider against `CalInvite::Providers::SUPPORTED_PROVIDERS` and raises `ArgumentError` naming the supported providers. Previously the name was passed to `const_get`, which fell back to top-level constants, so e.g. `:string` resolved Ruby's `String` and failed with a confusing `unknown keyword: :method`. `:ics_content` keeps working as a legacy alias of `:ics`. (#11)
-
-## [v0.2.10] - 2026-10-22
-
-- **Breaking:** `Event.new` and `Event#update_attributes` now raise `ArgumentError` (`Unknown attribute(s): locaton`) for keys that aren't `Event` attributes, instead of silently ignoring them — so typos no longer drop data. Callers passing extra keys (e.g. a whole params hash) must slice them first. `update_attributes` checks every key before assigning, so a rejected call leaves the event unchanged. (#10)
-
-## [v0.2.9] - 2026-10-22
-
-- `Event` now raises `ArgumentError` when `end_time` isn't after `start_time` (RFC 5545 requires `DTEND` later than `DTSTART`; all-day events may end on the same date), and when a `multi_day_sessions` entry is missing a time or ends before it starts. Previously these produced nonsensical invites. (#9)
-
-## [v0.2.8] - 2026-10-22
-
-- `Event.new` no longer mutates the attributes hash passed in. It used to `delete` `timezone`, `show_attendees`, `uid`, `sequence`, `busy`, `visibility`, `allow_counter`, `all_day` and `multi_day_sessions` from the caller's hash, so reusing it for a second event silently dropped them. (#8)
-
-## [v0.2.7] - 2026-10-22
-
-- **Breaking:** `Event` now validates `timezone` and raises `ArgumentError` unless it's `'UTC'` or an IANA identifier recognized by tzinfo (e.g. `'America/New_York'`). Previously an unrecognized value — including raw offsets like `'+01:00'` — produced `DTSTART;TZID=<value>` with no matching `VTIMEZONE` (invalid RFC 5545, and times shifted by the offset), and a `;`/`:` in it could inject parameters into the `TZID=` line. (#7)
-- `'UTC'` events now emit `Z`-suffixed `DTSTART`/`DTEND` (as already documented) instead of `TZID=UTC` with no `VTIMEZONE`.
-
-## [v0.2.6] - 2026-10-22
-
-- `.ics` output (`:ics`, `:ical`, `IcsContent`) now folds content lines longer than 75 octets (CRLF + single space, RFC 5545 §3.1), never splitting a multi-byte UTF-8 character. Long descriptions and attendee lines previously exceeded the limit, which Outlook and some mail gateways can mangle or reject. (#6)
-
-## [v0.2.5] - 2026-10-22
-
-- **Security:** fix content-line/parameter injection in `.ics` output (`:ics`, `:ical`, `IcsContent`). A CR or LF in event attributes (title, description, attendee/organizer names and emails, `uid`, `rrule`, `visibility`, `geo`, ...), or a `"` in a display name, could add arbitrary properties to a generated invite (e.g. extra attendees, a different `METHOD:`). URL providers were not affected. (#5)
-  - TEXT values are now escaped per RFC 5545 (backslashes were previously left unescaped and lone `\r` passed through).
+- **Fix content-line/parameter injection in `.ics` output** (`:ics`, `:ical`, `IcsContent`). A CR or LF in event attributes (title, description, attendee/organizer names and emails, `uid`, `rrule`, `visibility`, `geo`, ...), or a `"` in a display name, could add arbitrary properties to a generated invite (e.g. extra attendees, a different `METHOD:`). URL providers were not affected. (#5)
+  - TEXT values are escaped per RFC 5545 (backslashes were previously left unescaped and lone `\r` passed through).
   - `CN=` display names are quoted and escaped per RFC 6868.
-  - `URL:` is no longer TEXT-escaped (it is a URI value; commas/semicolons in links were being corrupted).
-  - Values that can't be escaped raise `ArgumentError` if they contain a line break. `visibility` must be `:public`/`:private`/`:confidential`, `geo` must be numeric, and `sequence` must be an integer; invalid values now raise `ArgumentError` instead of being emitted.
+  - `URL:` is no longer TEXT-escaped (it's a URI; commas and semicolons in links were being corrupted).
+  - Values that can't be escaped raise `ArgumentError` if they contain a line break. `visibility` must be `:public`/`:private`/`:confidential`, `geo` numeric, and `sequence` an integer.
 - `SECURITY.md`: real policy (supported versions, private reporting via GitHub Security Advisories).
 
-## [v0.2.4] - 2026-10-22
+### Added
 
-- `:ical` provider and `CalInvite::Providers::IcsContent` now delegate to the `:ics` generator, so all three produce identical RFC 5545 content. `IcsContent` previously emitted UTC-only times with no `VTIMEZONE`, ignored `notes`, and didn't support all-day events; `:ical` differed from `:ics` in property order and `PRODID`. (#4)
-- `:ics` all-day events without `start_time`/`end_time` now default to today (one-day span), matching the previous `:ical` behavior instead of raising.
+- `organizer:` accepts a plain email string (`organizer: "jane@example.com"`), like `attendees`; a string previously crashed `.ics` generation with `TypeError`. String-keyed hashes are read too. (#12)
+- Multi-day events no longer need top-level `start_time`/`end_time`: they default to the earliest session start and latest session end, so the README's multi-day example works. `:google`/`:outlook`/`:office365` show the overall span; `:ics`/`:ical`/`:yahoo` still emit one entry per session. Explicit times win. (#24)
 
-## [v0.2.3] - 2026-10-22
+### Fixed
 
-- Fix non-UTC timezones under tzinfo 1.x (Rails/ActiveSupport 6.0): `:ics`/`:ical` raised `NoMethodError` (`to_local`) for any non-UTC `timezone`, and `VTIMEZONE` was silently omitted. `IcalTimezone` now only uses APIs shared by tzinfo 1.2+ and 2.x; output is unchanged on tzinfo 2. (#17)
+- `.ics` content lines longer than 75 octets are folded (RFC 5545 §3.1), never splitting a multi-byte UTF-8 character. Long lines could be mangled or rejected by Outlook and mail gateways. (#6)
+- `'UTC'` events emit `Z`-suffixed `DTSTART`/`DTEND` instead of `TZID=UTC` with no `VTIMEZONE`. (#7)
+- `:ical` and `IcsContent` now produce exactly the same content as `:ics`. `IcsContent` previously emitted UTC-only times with no `VTIMEZONE`, ignored `notes`, and didn't support all-day events. `:ics` all-day events without times default to today, as `:ical` did. (#4)
+- Non-UTC timezones under tzinfo 1.x (Rails/ActiveSupport 6.0): `:ics`/`:ical` raised `NoMethodError` (`to_local`) and silently omitted `VTIMEZONE`. (#17)
+- `Event.new` no longer mutates the attributes hash passed in (it used to delete several keys from it, so reusing the hash dropped them). (#8)
 
-## [v0.2.2] - 2026-10-22
+### Docs
 
-- Docs: README "Testing" section now covers the three ways to exercise the gem locally (`rake test` incl. single-file runs, `bin/console` with a working sample event, and the Example app's local-path Gemfile workflow).
-- Docs: removed `CLAUDE.md` in favor of `AGENTS.md`, merging in its newer guidance.
+- README "Testing" section covers `rake test`, `bin/console`, and the Example app's local-path Gemfile workflow. `CLAUDE.md` merged into `AGENTS.md`.
 
 ## [v0.2.1] - 2026-08-10
 
