@@ -105,7 +105,7 @@ These changes can break existing callers:
 
 ## [v0.1.2] - 2024-12-17
 
-⚠️ This version should not be used
+**Warning:** This version should not be used
 
 - Add support to Microsoft office 365 calendar invite URL
 - Update the README
@@ -114,7 +114,7 @@ These changes can break existing callers:
 
 ## [v0.1.1] - 2024-12-17
 
-⚠️ This version should not be used
+**Warning:** This version should not be used
 
 Fixing a bug in the gemspec file
 
