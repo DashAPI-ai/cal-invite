@@ -152,5 +152,51 @@ module CalInvite
       assert_equal false, event.busy
       assert_equal "string-uid", event.uid
     end
+
+    def build_multi_day_event(attrs = {})
+      Event.new({
+        title: "Training Workshop",
+        multi_day_sessions: [
+          { start_time: Time.parse("2024-03-02 09:00:00 UTC"), end_time: Time.parse("2024-03-02 13:00:00 UTC") },
+          { start_time: Time.parse("2024-03-01 08:00:00 UTC"), end_time: Time.parse("2024-03-01 17:00:00 UTC") }
+        ],
+        timezone: "America/New_York"
+      }.merge(attrs))
+    end
+
+    def test_multi_day_event_without_top_level_times_spans_its_sessions
+      event = build_multi_day_event
+
+      assert_equal Time.parse("2024-03-01 08:00:00 UTC"), event.start_time
+      assert_equal Time.parse("2024-03-02 13:00:00 UTC"), event.end_time
+      Providers::SUPPORTED_PROVIDERS.each do |provider|
+        refute_empty event.generate_calendar_url(provider), provider
+      end
+      assert_includes event.generate_calendar_url(:google), "dates=20240301T080000Z/20240302T130000Z"
+      assert_equal 2, event.generate_calendar_url(:ics).scan("BEGIN:VEVENT").size
+      assert_equal 2, event.generate_calendar_url(:yahoo).lines.size
+    end
+
+    def test_explicit_times_win_over_multi_day_span
+      start_time = Time.parse("2024-02-28 10:00:00 UTC")
+      end_time = Time.parse("2024-03-03 10:00:00 UTC")
+      event = build_multi_day_event(start_time: start_time, end_time: end_time)
+
+      assert_equal start_time, event.start_time
+      assert_equal end_time, event.end_time
+    end
+
+    def test_multi_day_span_follows_updated_sessions
+      event = build_multi_day_event
+      later = Time.parse("2024-03-05 09:00:00 UTC")
+      event.update_attributes(multi_day_sessions: [{ start_time: later, end_time: later + 3600 }])
+
+      assert_equal later, event.start_time
+      assert_equal later + 3600, event.end_time
+    end
+
+    def test_times_still_required_without_sessions
+      assert_raises(ArgumentError) { Event.new(title: "T", multi_day_sessions: []) }
+    end
   end
 end
