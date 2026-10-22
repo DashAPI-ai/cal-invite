@@ -93,6 +93,7 @@ module CalInvite
     #
     # @raise [ArgumentError] If required attributes are missing
     def initialize(attributes = {})
+      attributes = attributes.dup # never mutate the caller's hash
       @show_attendees = attributes.delete(:show_attendees) || false
       @timezone = attributes.delete(:timezone) || 'UTC'
       @multi_day_sessions = attributes.delete(:multi_day_sessions) || []

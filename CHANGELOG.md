@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.8] - 2026-10-22
+
+- `Event.new` no longer mutates the attributes hash passed in. It used to `delete` `timezone`, `show_attendees`, `uid`, `sequence`, `busy`, `visibility`, `allow_counter`, `all_day` and `multi_day_sessions` from the caller's hash, so reusing it for a second event silently dropped them. (#8)
+
 ## [v0.2.7] - 2026-10-22
 
 - **Breaking:** `Event` now validates `timezone` and raises `ArgumentError` unless it's `'UTC'` or an IANA identifier recognized by tzinfo (e.g. `'America/New_York'`). Previously an unrecognized value — including raw offsets like `'+01:00'` — produced `DTSTART;TZID=<value>` with no matching `VTIMEZONE` (invalid RFC 5545, and times shifted by the offset), and a `;`/`:` in it could inject parameters into the `TZID=` line. (#7)
