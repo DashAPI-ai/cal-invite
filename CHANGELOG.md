@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.16] - 2026-10-22
+
+- Fix the documented cache helpers (`CalInvite.fetch_from_cache`, `write_to_cache`, `read_from_cache`, `clear_cache!`, `clear_event_cache!`, `clear_provider_cache!`), which all raised `NoMethodError`: `Caching` was an `ActiveSupport::Concern` included into `CalInvite`'s singleton class, which put the methods one level too deep. It's now a plain module extended onto `CalInvite`. (#32)
+
 ## [v0.2.15] - 2026-10-22
 
 - Requiring `cal_invite` no longer loads all of `active_support/core_ext`, so it stops monkey-patching core classes (`Integer#hours`, `Object#blank?`, `String#squish`, ...) in non-Rails apps. The gem now loads only `active_support` and `active_support/concern`; `ActiveSupport::Cache` is autoloaded only when `cache_store = :memory_store`/`:null_store` is used (on ActiveSupport < 8 that loads some core extensions, as before). Plain-Ruby code that relied on `cal_invite` loading those extensions must `require "active_support/core_ext"` (or the specific file) itself; Rails apps are unaffected. `Configuration#cache_expires_in` now defaults to `86400` (Integer) instead of `24.hours` (same value). This also lets the gem load with ActiveSupport 6.0 on Ruby 4.0, where the blanket require failed on the no-longer-default `benchmark` gem. (#15)

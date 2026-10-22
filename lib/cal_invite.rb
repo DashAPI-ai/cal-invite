@@ -61,8 +61,8 @@ module CalInvite
     def reset_configuration!
       self.configuration = Configuration.new
     end
-
-    # Include caching methods at the module level
-    include Caching
   end
+
+  # Cache helpers at the module level: CalInvite.fetch_from_cache etc.
+  extend Caching
 end
