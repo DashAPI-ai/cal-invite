@@ -1,5 +1,15 @@
 # Cal Invite
 
+## [v0.3.1] - 2026-10-22
+
+No changes to the library code; this release is packaging and documentation.
+
+- **Smaller gem.** The package no longer includes `assets/` (README images) or the unused `lib/tasks/rdoc.rake`: 52 KB instead of 973 KB.
+- **API reference fixed.** The published docs at https://dashapi-ai.github.io/cal-invite/ were missing `lib/cal_invite.rb` and every provider class (`Google`, `Outlook`, `Office365`, `Yahoo`, `Ics`, `Ical`, `IcsContent`, `IcsDownload`, `BaseProvider`), because the docs workflow's `lib/**/*.rb` glob only matched one directory level. The workflow now runs `rake rdoc` and also publishes the README, CONFIGURATION.md, CACHING.md and CHANGELOG.md.
+- **New CACHING.md** on caching CalInvite output in your app (plain Ruby, Rails 8.1, Sinatra, Hanami, Grape), including HTTP caching for `.ics` feeds. The example app gains a cached `.ics` download (`MeetingsController#show`).
+- **README rewritten** for 0.3.0, with accurate examples that run in plain Ruby.
+- **Gem metadata:** the RubyGems changelog link pointed at a non-existent `master` branch; it now points at `main`, and a documentation link was added.
+
 ## [v0.3.0] - 2026-10-22
 
 ### Upgrading from 0.2.x
