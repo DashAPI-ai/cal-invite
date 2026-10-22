@@ -9,7 +9,6 @@ require 'uri'
 
 require 'cal_invite/version'
 require 'cal_invite/configuration'
-require 'cal_invite/caching'
 require 'cal_invite/ical_timezone'
 require 'cal_invite/event'
 require 'cal_invite/providers'
@@ -20,7 +19,6 @@ require 'cal_invite/providers'
 # @example Configure the gem
 #   CalInvite.configure do |config|
 #     config.timezone = 'America/New_York'
-#     config.cache_store = :memory_store
 #   end
 #
 # @example Create and generate a calendar URL
@@ -48,8 +46,7 @@ module CalInvite
     # @example
     #   CalInvite.configure do |config|
     #     config.timezone = 'UTC'
-    #     config.cache_store = :memory_store
-    #   end
+        #   end
     def configure
       self.configuration ||= Configuration.new
       yield(configuration)
@@ -61,8 +58,5 @@ module CalInvite
     def reset_configuration!
       self.configuration = Configuration.new
     end
-
-    # Include caching methods at the module level
-    include Caching
   end
 end

@@ -2,8 +2,6 @@
 
 Complete reference for every configurable option in CalInvite: `Event` attributes, providers, the `generate_calendar_url` call, ICS/email-invite delivery, and global `CalInvite.configure` settings.
 
-For caching-specific detail, see [CACHING.md](CACHING.md).
-
 ## Table of Contents
 
 - [Event attributes](#event-attributes)
@@ -101,7 +99,13 @@ event.generate_calendar_url(provider, method: :publish)
 | `provider`| `Symbol` | required   | One of the provider symbols above (a String also works). Anything else raises `ArgumentError` listing the supported providers. `:ics_content` is accepted as a legacy alias of `:ics`. |
 | `method`  | `Symbol` | `:publish` | `:publish`, `:request`, `:cancel`, `:reply`, `:counter`, or `:decline_counter`. Only honored by `:ics`/`:ical` — ignored by URL-based providers. `:request` requires `organizer` to be set on the event; see below. `:cancel` requires reusing the original `uid` — see [Updating and cancelling invites](#updating-and-cancelling-invites). `:reply`/`:counter`/`:decline_counter` omit `RSVP=TRUE` on `ATTENDEE` lines — see [Attendee RSVP status and METHOD:REPLY](#attendee-rsvp-status-and-methodreply) and [Attendee-proposed reschedules (COUNTER)](#attendee-proposed-reschedules-counter). Note: `:decline_counter` renders as `METHOD:DECLINECOUNTER` (one word, per RFC 5545). |
 
-Output is generated fresh on every call; it is never cached (see [CACHING.md](CACHING.md)).
+Output is generated fresh on every call. CalInvite doesn't cache anything: building the output takes microseconds, and a cached `.ics` would keep a stale `DTSTAMP`. If you want caching anyway, do it in your app, keyed on whatever identifies the content and changes with it:
+
+```ruby
+Rails.cache.fetch([meeting, meeting.sequence, :ics]) do
+  meeting.to_cal_invite_event.generate_calendar_url(:ics, method: :request)
+end
+```
 
 ## ICS content and downloads
 
@@ -517,9 +521,6 @@ the place instead (e.g. `'Europe/Paris'`), or `'UTC'`.
 ```ruby
 # config/initializers/cal_invite.rb
 CalInvite.configure do |config|
-  config.cache_store = Rails.cache        # or :memory_store, :null_store, or a custom read/write/delete object
-  config.cache_prefix = 'my_app_cal_invite'
-  config.cache_expires_in = 3600           # seconds
   config.webhook_secret = ENV['CAL_INVITE_WEBHOOK_SECRET']
   config.timezone = 'UTC'
 end
@@ -527,10 +528,7 @@ end
 
 | Option              | Type                                   | Default        | Notes |
 |---------------------|-----------------------------------------|----------------|-------|
-| `cache_store`       | `:memory_store`, `:null_store`, or any object implementing `read`/`write`/`delete` | `nil`          | Backs the `CalInvite` cache helpers only — generated output is never cached. See [CACHING.md](CACHING.md). |
-| `cache_prefix`      | `String`                                | `'cal_invite'` | Namespaces cache helper keys. |
-| `cache_expires_in`  | `Integer` (seconds)                     | `86400` (24h)  | |
 | `webhook_secret`    | `String`                                | `nil`          | Reserved for webhook signature verification in consuming apps. |
 | `timezone`          | `String`                                | `'UTC'`        | Configuration-level default; per-event `timezone` attribute takes precedence for that event's display formatting. |
 
-`generate_calendar_url` regenerates output on every call, whether or not `cache_store` is set.
+`cache_store`, `cache_prefix` and `cache_expires_in` are deprecated and have no effect. Setting one prints a warning, and they'll be removed in 0.3.0, so delete them from your initializer.
