@@ -1,5 +1,14 @@
 # Cal Invite
 
+## [v0.3.2] - 2026-10-22
+
+No changes to the library code; this release is documentation and CI.
+
+- **API docs layout fixed.** The README's wide banner image ran under the "On This Page" sidebar on the published docs. RDoc now loads `assets/rdoc-overrides.css`, which keeps images inside the content column.
+- **Docs deploy on their own.** The documentation workflow runs on every push to `main` that changes a file the docs render, and can be started by hand from the Actions tab on any branch. Release tags still publish the docs as before.
+- **Faster CI for doc-only changes.** Changes that touch only Markdown files or `assets/` skip the test matrix. Tag pushes always run the full pipeline.
+- **CI tidy-ups.** Superseded pull request runs are cancelled. Documentation deploys queue instead of cancelling each other. Workflow permissions are narrowed, and the test job has a 20-minute timeout.
+
 ## [v0.3.1] - 2026-10-22
 
 No changes to the library code; this release is packaging and documentation.

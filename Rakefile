@@ -23,6 +23,7 @@ RDoc::Task.new(:rdoc) do |rdoc|
   rdoc.options << '--markup' << 'markdown'
   rdoc.options << '--all'
   rdoc.options << '--exclude' << '^(test|spec|features)/'
+  rdoc.options << '--template-stylesheets' << 'assets/rdoc-overrides.css'
 
   # Include files to document
   rdoc.rdoc_files.include('README.md', 'CONFIGURATION.md', 'CACHING.md', 'CHANGELOG.md',
