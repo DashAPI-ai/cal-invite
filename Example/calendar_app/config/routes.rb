@@ -26,7 +26,8 @@ Rails.application.routes.draw do
 
   # Demonstrates persisting uid/sequence and the send -> reschedule -> cancel
   # lifecycle for a real RSVP-capable invite. See CONFIGURATION.md.
-  resources :meetings, only: [:index, :new, :create] do
+  # GET /meetings/:id.ics serves a cached .ics file; see MeetingsController#show.
+  resources :meetings, only: [:index, :show, :new, :create] do
     member do
       patch :reschedule
       post :cancel

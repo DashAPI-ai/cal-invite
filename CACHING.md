@@ -158,6 +158,8 @@ end
 
 `GET /meetings/1.ics` returns the file, and a repeat request with the `ETag` it got back returns `304`. Passing `meeting` in the cache key uses its `cache_key_with_version`, which changes with `updated_at`, so updating the record (including bumping `sequence`) also refreshes the cached copy. If `sequence` lives somewhere that doesn't touch `updated_at`, add it to both the key and `stale?(etag: ...)`.
 
+The [example app](Example/calendar_app) has a complete version in `MeetingsController#show`, with tests. Its meetings list attendees, so it keeps `Cache-Control` private (no `public: true`), uses `belongs_to :meeting, touch: true` so an attendee's RSVP change expires the cache, and bumps `sequence` with `increment!(:sequence, touch: true)`, because `increment!` alone doesn't update `updated_at`.
+
 ## Sinatra
 
 Tested with Sinatra 4.2. The `etag` and `last_modified` helpers stop the route with a `304` when the client's copy is current, so the `.ics` is only generated, or read from the cache, for clients that need it.

@@ -11,6 +11,9 @@
     <code class="px-1 py-0.5 rounded bg-slate-100 text-sm">uid</code> with an incremented
     <code class="px-1 py-0.5 rounded bg-slate-100 text-sm">sequence</code> — see
     <code class="px-1 py-0.5 rounded bg-slate-100 text-sm">Meeting#bump_sequence!</code>.
+    "Download .ics" is served from <code class="px-1 py-0.5 rounded bg-slate-100 text-sm">Rails.cache</code>
+    with an ETag, so repeat downloads of an unchanged meeting get a 304; see
+    <code class="px-1 py-0.5 rounded bg-slate-100 text-sm">MeetingsController#show</code> and CACHING.md.
   </p>
 
   <div class="mt-6 space-y-4">
@@ -31,8 +34,10 @@
             <p class="text-xs text-slate-400 font-mono"><%= meeting.uid %></p>
           </div>
 
+          <div class="flex gap-2">
+            <%= link_to "Download .ics", meeting_path(meeting, format: :ics),
+                class: "text-sm rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50" %>
           <% unless meeting.status == "cancelled" %>
-            <div class="flex gap-2">
               <%= button_to "Reschedule +1h", reschedule_meeting_path(meeting),
                   method: :patch,
                   params: { meeting: { start_time: meeting.start_time + 1.hour, end_time: meeting.end_time + 1.hour } },
@@ -40,8 +45,8 @@
               <%= button_to "Cancel", cancel_meeting_path(meeting),
                   method: :post,
                   class: "text-sm rounded-md border border-red-300 text-red-700 px-3 py-1.5 hover:bg-red-50" %>
-            </div>
           <% end %>
+          </div>
         </div>
 
         <% if meeting.meeting_attendees.any? %>
