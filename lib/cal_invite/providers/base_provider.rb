@@ -139,7 +139,7 @@ class BaseProvider
     partstat_key = attendee_hash_value(attendee, :partstat)
     rsvp_override = attendee_hash_value(attendee, :rsvp)
 
-    cn = name ? %(;CN="#{name}") : ""
+    cn = name ? ";CN=#{quoted_param(name)}" : ""
     partstat = PARTSTAT_VALUES[partstat_key&.to_sym] || "NEEDS-ACTION"
     # REPLY/COUNTER/DECLINECOUNTER all flow attendee -> organizer; RSVP=TRUE
     # ("please respond") only makes sense on an organizer -> attendee REQUEST.
@@ -155,7 +155,7 @@ class BaseProvider
     return nil unless event.organizer && event.organizer[:email]
 
     name = event.organizer[:name]
-    cn = name ? %(;CN="#{name}") : ""
+    cn = name ? ";CN=#{quoted_param(name)}" : ""
     "ORGANIZER#{cn}:mailto:#{event.organizer[:email]}"
   end
 
@@ -192,13 +192,25 @@ class BaseProvider
 
   # Format the GEO property from Event#geo.
   # @return [String, nil] The formatted GEO line, or nil if no geo is set
+  # @raise [ArgumentError] if lat/lng aren't numeric
   def geo_line
     return nil unless event.geo
 
     lat, lng = event.geo.is_a?(Hash) ? [event.geo[:lat] || event.geo["lat"], event.geo[:lng] || event.geo["lng"]] : event.geo
     return nil unless lat && lng
 
-    "GEO:#{lat};#{lng}"
+    "GEO:#{Float(lat)};#{Float(lng)}"
+  rescue TypeError, ArgumentError
+    raise ArgumentError, "geo lat/lng must be numeric (got #{event.geo.inspect})"
+  end
+
+  # The SEQUENCE property, from Event#sequence.
+  # @return [String] e.g. "SEQUENCE:0"
+  # @raise [ArgumentError] if sequence isn't an integer
+  def sequence_line
+    "SEQUENCE:#{Integer(event.sequence)}"
+  rescue TypeError, ArgumentError
+    raise ArgumentError, "sequence must be an integer (got #{event.sequence.inspect})"
   end
 
   # The TRANSP property, from Event#busy (default true).
@@ -207,10 +219,28 @@ class BaseProvider
     event.busy == false ? "TRANSP:TRANSPARENT" : "TRANSP:OPAQUE"
   end
 
+  VISIBILITY_VALUES = %w[PUBLIC PRIVATE CONFIDENTIAL].freeze
+
   # The CLASS property, from Event#visibility (default :public).
   # @return [String] e.g. "CLASS:PUBLIC"
+  # @raise [ArgumentError] if visibility isn't :public, :private, or :confidential
   def class_line
-    "CLASS:#{(event.visibility || :public).to_s.upcase}"
+    value = (event.visibility || :public).to_s.upcase
+    unless VISIBILITY_VALUES.include?(value)
+      raise ArgumentError, "visibility must be one of :public, :private, :confidential (got #{event.visibility.inspect})"
+    end
+
+    "CLASS:#{value}"
+  end
+
+  # Quotes a parameter value (e.g. CN) and escapes it per RFC 6868, so a display
+  # name can't close the quoted string and inject parameters, or break the line.
+  #
+  # @param value [#to_s] The raw parameter value
+  # @return [String] The quoted, escaped value
+  def quoted_param(value)
+    escaped = value.to_s.gsub(/\^|"|\r\n|[\r\n]/) { |match| { '^' => '^^', '"' => "^'" }.fetch(match, '^n') }
+    %("#{escaped}")
   end
 
   # The RRULE property, from Event#rrule, if set.

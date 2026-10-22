@@ -69,10 +69,26 @@ module CalInvite
         end
 
         calendar_lines << "END:VCALENDAR"
+        ensure_single_line_values!(calendar_lines)
         calendar_lines.join("\r\n")
       end
 
       private
+
+      # Last line of defense against content-line injection: a CR or LF inside a
+      # value would end the line and let the rest of the value be parsed as new
+      # properties/components. TEXT values are escaped before reaching here, so
+      # this only fires for unescaped values (UID, URL, RRULE, emails, ...).
+      #
+      # @param lines [Array<String>] The content lines about to be joined
+      # @raise [ArgumentError] if any line contains a CR or LF
+      # @return [void]
+      def ensure_single_line_values!(lines)
+        line = lines.find { |l| l.match?(/[\r\n]/) }
+        return unless line
+
+        raise ArgumentError, "#{line[/\A[A-Z-]+/]} value must not contain line breaks"
+      end
 
       # Generates an all-day event component (VEVENT) with appropriate formatting.
       # Defaults to today (and a one-day span) when start/end times are omitted.
@@ -131,7 +147,8 @@ module CalInvite
         end
 
         if url = format_url
-          vevent << "URL:#{escape_text(url)}"
+          # URL is a URI value, not TEXT: RFC 5545 escaping would corrupt it.
+          vevent << "URL:#{url}"
         end
 
         vevent << geo_line if geo_line
@@ -143,7 +160,7 @@ module CalInvite
         attendees_list.each { |attendee| vevent << attendee_line(attendee) }
 
         vevent << rrule_line if rrule_line
-        vevent << "SEQUENCE:#{event.sequence}"
+        vevent << sequence_line
         vevent << status_line
         vevent << transp_line
         vevent << busystatus_line
@@ -179,17 +196,15 @@ module CalInvite
         local_wall_time(time).strftime("%Y%m%dT%H%M%S")
       end
 
-      # Escapes special characters in text according to iCalendar spec.
+      # Escapes a TEXT value per RFC 5545 §3.3.11: backslash, semicolon and comma
+      # are backslash-escaped, and any line break (CRLF, CR or LF) becomes `\n`.
       #
       # @param text [String, nil] The text to escape
       # @return [String] The escaped text, or empty string if input was nil
       def escape_text(text)
         return '' if text.nil?
-        text.to_s
-            .gsub('\\', '\\\\')
-            .gsub("\n", '\\n')
-            .gsub(',', '\\,')
-            .gsub(';', '\\;')
+
+        text.to_s.gsub(/\r\n|[\r\n\\;,]/) { |match| match.match?(/[\r\n]/) ? '\\n' : "\\#{match}" }
       end
     end
   end

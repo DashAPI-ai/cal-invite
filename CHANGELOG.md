@@ -1,5 +1,14 @@
 # Cal Invite
 
+## [v0.2.5] - 2026-10-22
+
+- **Security:** fix content-line/parameter injection in `.ics` output (`:ics`, `:ical`, `IcsContent`). A CR or LF in event attributes (title, description, attendee/organizer names and emails, `uid`, `rrule`, `visibility`, `geo`, ...), or a `"` in a display name, could add arbitrary properties to a generated invite (e.g. extra attendees, a different `METHOD:`). URL providers were not affected. (#5)
+  - TEXT values are now escaped per RFC 5545 (backslashes were previously left unescaped and lone `\r` passed through).
+  - `CN=` display names are quoted and escaped per RFC 6868.
+  - `URL:` is no longer TEXT-escaped (it is a URI value; commas/semicolons in links were being corrupted).
+  - Values that can't be escaped raise `ArgumentError` if they contain a line break. `visibility` must be `:public`/`:private`/`:confidential`, `geo` must be numeric, and `sequence` must be an integer; invalid values now raise `ArgumentError` instead of being emitted.
+- `SECURITY.md`: real policy (supported versions, private reporting via GitHub Security Advisories).
+
 ## [v0.2.4] - 2026-10-22
 
 - `:ical` provider and `CalInvite::Providers::IcsContent` now delegate to the `:ics` generator, so all three produce identical RFC 5545 content. `IcsContent` previously emitted UTC-only times with no `VTIMEZONE`, ignored `notes`, and didn't support all-day events; `:ical` differed from `:ics` in property order and `PRODID`. (#4)

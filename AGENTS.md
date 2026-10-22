@@ -39,6 +39,7 @@ Tests are Minitest-based, files live under `test/cal_invite/`, named `*_test.rb`
 ## Conventions
 
 - Always pass times to `Event.new` in UTC; use the `timezone` attribute only to control display/formatting in the generated invite.
+- **Treat every `Event` attribute as untrusted input** (host apps pass end-user strings: titles, display names, ...). In `.ics` output: TEXT values go through `Ics#escape_text`; parameter values (e.g. `CN=`) through `BaseProvider#quoted_param` (RFC 6868); enumerated/numeric values are whitelisted or coerced (`class_line`, `geo_line`, `sequence_line`); and `Ics#ensure_single_line_values!` raises on any CR/LF left in a content line — never bypass it or interpolate a raw attribute into a property/parameter. URL providers must pass every value through `url_encode`. Add a case to `test/cal_invite/ics_security_test.rb` for any new property.
 - `location` (physical) and `url` (virtual meeting link) are kept as distinct fields throughout the provider layer — don't conflate them when adding provider logic.
 - All-day events skip `start_time`/`end_time` validation; multi-day events use the separate `multi_day_sessions` array instead of `start_time`/`end_time`.
 - YARD-style doc comments (`@param`, `@return`, `@example`) are used throughout `lib/` and feed the RDoc-generated docs published to GitHub Pages (`.github/workflows/documentation.yml`) — keep them accurate when changing public method signatures.
