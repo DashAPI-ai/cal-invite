@@ -35,7 +35,9 @@ class Meeting < ApplicationRecord
   # RFC 5545 requires SEQUENCE to strictly increase for clients to treat the
   # new message as superseding the last one.
   def bump_sequence!
-    increment!(:sequence)
+    # touch: true also bumps updated_at, which the cached .ics download is keyed
+    # on (MeetingsController#show); increment! alone leaves it unchanged.
+    increment!(:sequence, touch: true)
   end
 
   def cancel!

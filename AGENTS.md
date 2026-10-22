@@ -45,7 +45,7 @@ Tests are Minitest-based, files live under `test/cal_invite/`, named `*_test.rb`
 
 ## Example app (`Example/calendar_app`)
 
-Rails 8.1 app demonstrating the gem. Its Gemfile depends on the **published** `cal-invite` gem (never commit it pointing at `path: "../.."`) — when testing example-app changes that rely on unreleased gem code, temporarily uncomment the `path: "../.."` line locally, `bundle install`, test, then revert the Gemfile and re-run `bundle install` against rubygems before committing. `Meeting`/`MeetingAttendee` (with a migration) is a working reference implementation of the `uid`/`sequence` persistence pattern CONFIGURATION.md describes — see `app/models/meeting.rb`, `app/controllers/meetings_controller.rb` (create/reschedule/cancel), and `app/controllers/event_replies_controller.rb` (illustrative inbound `METHOD:REPLY` parsing, not wired to a real inbound-email provider).
+Rails 8.1 app demonstrating the gem. Its Gemfile depends on the **published** `cal-invite` gem (never commit it pointing at `path: "../.."`) — when testing example-app changes that rely on unreleased gem code, temporarily uncomment the `path: "../.."` line locally, `bundle install`, test, then revert the Gemfile and re-run `bundle install` against rubygems before committing. `Meeting`/`MeetingAttendee` (with a migration) is a working reference implementation of the `uid`/`sequence` persistence pattern CONFIGURATION.md describes — see `app/models/meeting.rb`, `app/controllers/meetings_controller.rb` (create/reschedule/cancel, plus `show` serving a cached `.ics` with `stale?` + `Rails.cache` per CACHING.md), and `app/controllers/event_replies_controller.rb` (illustrative inbound `METHOD:REPLY` parsing, not wired to a real inbound-email provider).
 
 ## PRs & commits
 

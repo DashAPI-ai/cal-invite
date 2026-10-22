@@ -6,7 +6,9 @@
 class MeetingAttendee < ApplicationRecord
   PARTSTATS = %w[needs_action accepted declined tentative delegated].freeze
 
-  belongs_to :meeting
+  # Touching the meeting when an attendee is added or their RSVP changes
+  # expires the meeting's cached .ics download (MeetingsController#show).
+  belongs_to :meeting, touch: true
 
   validates :email, presence: true, uniqueness: { scope: :meeting_id }
   validates :partstat, inclusion: { in: PARTSTATS }

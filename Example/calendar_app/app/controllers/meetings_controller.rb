@@ -11,6 +11,39 @@ class MeetingsController < ApplicationController
     @meetings = Meeting.order(created_at: :desc)
   end
 
+  # Serves the meeting as an .ics file (GET /meetings/:id.ics), cached the
+  # way CACHING.md recommends:
+  #
+  # - stale? sets ETag and Last-Modified from the meeting and answers
+  #   304 Not Modified when the client's copy is current, so a calendar app
+  #   polling the file gets nothing regenerated. The ETag comes from the
+  #   record's version, never from the .ics content: CalInvite writes the
+  #   current time into DTSTAMP on every generation, so a content hash would
+  #   never match.
+  # - Rails.cache keeps the generated content under a key that includes the
+  #   meeting's cache_key_with_version (it changes with updated_at, which
+  #   reschedules, cancellations, sequence bumps and attendee RSVP changes all
+  #   touch) and the iCalendar method. A changed meeting simply misses; nothing
+  #   is deleted by hand.
+  #
+  # Cache-Control stays private (stale?'s default) because the file lists
+  # attendee emails, so shared caches and CDNs must not store it.
+  def show
+    meeting = Meeting.includes(:meeting_attendees).find(params[:id])
+    ics_method = meeting.status == "cancelled" ? :cancel : :publish
+
+    respond_to do |format|
+      format.ics do
+        if stale?(meeting)
+          ics = Rails.cache.fetch([meeting, :ics, ics_method]) do
+            meeting.to_cal_event.generate_calendar_url(:ics, method: ics_method)
+          end
+          send_data ics, type: :ics, disposition: "attachment", filename: "#{meeting.title.parameterize}.ics"
+        end
+      end
+    end
+  end
+
   def new
     @meeting = Meeting.new(start_time: 3.days.from_now.change(hour: 10), end_time: 3.days.from_now.change(hour: 11))
   end
