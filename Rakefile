@@ -25,7 +25,8 @@ RDoc::Task.new(:rdoc) do |rdoc|
   rdoc.options << '--exclude' << '^(test|spec|features)/'
 
   # Include files to document
-  rdoc.rdoc_files.include('README.md', 'LICENSE.txt', 'lib/**/*.rb')
+  rdoc.rdoc_files.include('README.md', 'CONFIGURATION.md', 'CACHING.md', 'CHANGELOG.md',
+                          'SECURITY.md', 'CODE_OF_CONDUCT.md', 'LICENSE.txt', 'lib/**/*.rb')
   rdoc.rdoc_files.exclude('lib/cal_invite/version.rb')
 end
 

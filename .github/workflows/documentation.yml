@@ -55,11 +55,12 @@ jobs:
         rm -f doc/created.rid
         rm -rf doc docs _site rdoc
         bundle install
-        gem install rdoc
 
+    # Same task as local `rake rdoc`. The README's images live in assets/.
     - name: Generate RDoc
       run: |
-        bundle exec rdoc lib/**/*.rb --exclude Example/calendar_app --op doc --format=darkfish --force-update --verbose
+        bundle exec rake rdoc
+        cp -R assets doc/
 
     - name: Debug Deployment
       run: |
