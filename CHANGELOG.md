@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.14] - 2026-10-22
+
+- `Event#generate_calendar_url` no longer caches its output in `CalInvite.configuration.cache_store`, and `update_attributes` no longer calls `delete_matched("cal_invite:event:*")`, which wiped every event's cached output. The cache ignored `cache_prefix`, almost never hit (keys included the random auto-generated `uid`), froze `.ics` `DTSTAMP`, and cost more than regenerating. Output is unchanged; nothing to migrate. The `cache_store` setting and the `CalInvite.fetch_from_cache`/`write_to_cache`/`read_from_cache`/`clear_*` helpers remain. See CACHING.md. (#14)
+
 ## [v0.2.13] - 2026-10-22
 
 - `BaseProvider` moved to `CalInvite::Providers::BaseProvider`, so the gem no longer owns a top-level constant that can collide with a host app's own `BaseProvider`. `::BaseProvider` remains as a deprecated alias until 0.3.0 (Ruby prints `constant ::BaseProvider is deprecated` when deprecation warnings are enabled, e.g. `RUBYOPT=-W:deprecated`); it isn't defined at all if the app already has a `BaseProvider`. (#13)

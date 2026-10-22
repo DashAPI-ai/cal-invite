@@ -1,6 +1,6 @@
 # 📅 CalInvite
 
-A Ruby gem for generating calendar invitations across multiple calendar platforms with caching and webhook support.
+A Ruby gem for generating calendar invitations across multiple calendar platforms with webhook support.
 
 [![Gem Version](https://badge.fury.io/rb/cal-invite.svg)](https://badge.fury.io/rb/cal-invite)
 ![Build Status](https://github.com/DashAPI-ai/cal-invite/actions/workflows/main.yml/badge.svg)
@@ -219,23 +219,9 @@ end
 
 ## Caching Support
 
-CalInvite includes built-in caching support to improve performance when generating calendar URLs. To enable caching in your Rails application:
+Generated URLs and `.ics` content are not cached: they're cheap to build and always fresh. `CalInvite.configure` still accepts a `cache_store` (e.g. `Rails.cache`) backing small prefixed cache helpers (`CalInvite.fetch_from_cache` etc.) you can use yourself.
 
-```ruby
-# config/initializers/cal_invite.rb
-CalInvite.configure do |config|
-  # Use Rails cache by default
-  config.cache_store = Rails.cache
-  
-  # Optional: Set cache prefix
-  config.cache_prefix = 'my_app_cal_invite'
-  
-  # Optional: Set expiration time (in seconds)
-  config.cache_expires_in = 3600 # 1 hour
-end
-```
-
-For detailed information about configuring caching in Rails applications and available options, see our [Caching Guide](https://github.com/DashAPI-ai/cal-invite/blob/master/CACHING.md). For every other configuration option (`Event` attributes, providers, email invites), see [CONFIGURATION.md](CONFIGURATION.md).
+For why output isn't cached, how to cache it at your own layer, and the helper API, see the [Caching Guide](https://github.com/DashAPI-ai/cal-invite/blob/master/CACHING.md). For every other configuration option (`Event` attributes, providers, email invites), see [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Development
 

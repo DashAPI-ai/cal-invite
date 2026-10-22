@@ -152,5 +152,36 @@ module CalInvite
       assert_equal false, event.busy
       assert_equal "string-uid", event.uid
     end
+
+    # Records every call so tests can assert the store is left untouched.
+    class RecordingStore
+      attr_reader :calls
+
+      def initialize
+        @calls = []
+      end
+
+      %i[read write delete delete_matched clear].each do |name|
+        define_method(name) { |*args, **opts| @calls << name; nil }
+      end
+    end
+
+    def test_generated_output_is_not_cached
+      store = RecordingStore.new
+      original = CalInvite.configuration.cache_store
+      CalInvite.configuration.cache_store = store
+
+      event = Event.new(title: "Sync", start_time: Time.now, end_time: Time.now + 3600, uid: "fixed-uid")
+      first = event.generate_calendar_url(:google)
+      event.update_attributes(title: "Renamed")
+      second = event.generate_calendar_url(:google)
+      event.generate_calendar_url(:ics)
+
+      assert_includes first, "Sync"
+      assert_includes second, "Renamed"
+      assert_empty store.calls
+    ensure
+      CalInvite.configuration.cache_store = original
+    end
   end
 end

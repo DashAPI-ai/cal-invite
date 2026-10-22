@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'digest'
-
 # lib/cal_invite/event.rb
 # Represents a calendar event with all its attributes and generation capabilities.
 #
@@ -148,22 +146,7 @@ module CalInvite
     #   event.generate_calendar_url(:ics, method: :cancel)
     def generate_calendar_url(provider, method: :publish)
       validate!
-      provider_class = provider_class_for(provider)
-
-      if caching_enabled?
-        cache_key = cache_key_for(provider, method)
-        cached_url = fetch_from_cache(cache_key)
-        return cached_url if cached_url
-      end
-
-      # Generate the URL
-      generator = provider_class.new(self, method: method)
-      url = generator.generate
-
-      # Cache the result if caching is enabled
-      write_to_cache(cache_key, url) if caching_enabled?
-
-      url
+      provider_class_for(provider).new(self, method: method).generate
     end
 
     # Updates the event attributes with new values.
@@ -179,8 +162,6 @@ module CalInvite
     #   )
     def update_attributes(new_attributes)
       assign_attributes(new_attributes)
-
-      invalidate_cache if caching_enabled?
       validate!
     end
 
@@ -275,92 +256,6 @@ module CalInvite
       return if end_at > start_at || (all_day && end_at == start_at)
 
       raise ArgumentError, "#{label} must be after start time"
-    end
-
-    # Checks if caching is enabled in the configuration.
-    #
-    # @return [Boolean] true if caching is enabled, false otherwise
-    def caching_enabled?
-      CalInvite.configuration &&
-        CalInvite.configuration.respond_to?(:cache_store) &&
-        CalInvite.configuration.cache_store
-    end
-
-    # Generates a cache key for the event and provider combination.
-    #
-    # @param provider [Symbol] The calendar provider
-    # @param method [Symbol] The iCalendar METHOD used to generate the content
-    # @return [String, nil] The cache key or nil if caching is disabled
-    def cache_key_for(provider, method = :publish)
-      return nil unless caching_enabled?
-
-      attributes_hash = Digest::MD5.hexdigest(
-        [
-          title,
-          start_time&.to_i,
-          end_time&.to_i,
-          description,
-          location,
-          url,
-          attendees,
-          timezone,
-          show_attendees,
-          notes,
-          multi_day_sessions,
-          all_day,
-          organizer,
-          uid,
-          sequence,
-          geo,
-          reminders,
-          busy,
-          visibility,
-          rrule,
-          calendar_name,
-          importance,
-          allow_counter,
-          provider,
-          method
-        ].map(&:to_s).join('|')
-      )
-
-      "cal_invite:event:#{attributes_hash}"
-    end
-
-    # Retrieves a value from the cache store.
-    #
-    # @param key [String] The cache key
-    # @return [String, nil] The cached value or nil if not found
-    def fetch_from_cache(key)
-      return nil unless key && caching_enabled?
-      CalInvite.configuration.cache_store.read(key)
-    end
-
-    # Writes a value to the cache store.
-    #
-    # @param key [String] The cache key
-    # @param value [String] The value to cache
-    # @return [void]
-    def write_to_cache(key, value)
-      return unless key && caching_enabled?
-
-      expires_in = CalInvite.configuration&.cache_expires_in
-      CalInvite.configuration.cache_store.write(
-        key,
-        value,
-        expires_in: expires_in
-      )
-    end
-
-    # Invalidates all cached URLs for this event.
-    #
-    # @return [void]
-    def invalidate_cache
-      return unless caching_enabled?
-
-      if CalInvite.configuration.cache_store.respond_to?(:delete_matched)
-        CalInvite.configuration.cache_store.delete_matched("cal_invite:event:*")
-      end
     end
   end
 end
