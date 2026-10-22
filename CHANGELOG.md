@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.18] - 2026-10-22
+
+- Multi-day events no longer need top-level `start_time`/`end_time`: `Event#start_time`/`#end_time` default to the earliest session start and latest session end, so the README's multi-day example works (it raised `Start time is required for non-all-day events`). `:google`, `:outlook` and `:office365`, which can only express one range, now show the overall span; `:ics`/`:ical`/`:yahoo` still emit one entry per session. Explicit `start_time`/`end_time` still win, and the span is computed on read, so it follows `update_attributes(multi_day_sessions: ...)`. (#24)
+
 ## [v0.2.17] - 2026-10-22
 
 - `CalInvite.configuration.timezone` is now the default `Event#timezone` when `timezone:` isn't passed; it was documented that way but ignored (events always defaulted to `'UTC'`). An explicit `timezone:` still wins, and an unknown configured zone makes `Event.new` raise `ArgumentError`. **Behavior change** for apps that set `config.timezone` to something other than `'UTC'`: their events now render in that zone. (#22)

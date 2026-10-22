@@ -4,8 +4,8 @@
 # Represents a calendar event with all its attributes and generation capabilities.
 #
 # @attr_accessor [String] title The title of the event
-# @attr_accessor [Time] start_time The start time of the event
-# @attr_accessor [Time] end_time The end time of the event
+# @attr_accessor [Time] start_time The start time of the event (defaults to the earliest multi_day_sessions start)
+# @attr_accessor [Time] end_time The end time of the event (defaults to the latest multi_day_sessions end)
 # @attr_accessor [String] description The description of the event
 # @attr_accessor [String] location The location of the event
 # @attr_accessor [String] url The URL associated with the event
@@ -33,9 +33,8 @@
 #   this; other clients don't expose an equivalent control
 module CalInvite
   class Event
+    attr_writer :start_time, :end_time
     attr_accessor :title,
-                  :start_time,
-                  :end_time,
                   :description,
                   :location,
                   :url,
@@ -57,12 +56,31 @@ module CalInvite
                   :importance,
                   :allow_counter
 
+    # The event start. Without an explicit value, a multi-day event spans
+    # from its earliest session start, so single-event URL providers (Google,
+    # Outlook, Office 365) show the overall range.
+    #
+    # @return [Time, nil]
+    def start_time
+      @start_time || multi_day_sessions&.map { |session| session[:start_time] }&.compact&.min
+    end
+
+    # The event end. Without an explicit value, a multi-day event ends at its
+    # latest session end.
+    #
+    # @return [Time, nil]
+    def end_time
+      @end_time || multi_day_sessions&.map { |session| session[:end_time] }&.compact&.max
+    end
+
     # Initializes a new Event instance with the given attributes.
     #
     # @param attributes [Hash] The attributes to initialize the event with
     # @option attributes [String] :title The event title
-    # @option attributes [Time] :start_time The event start time
-    # @option attributes [Time] :end_time The event end time
+    # @option attributes [Time] :start_time The event start time. Optional with :multi_day_sessions
+    #   (defaults to the earliest session start).
+    # @option attributes [Time] :end_time The event end time. Optional with :multi_day_sessions
+    #   (defaults to the latest session end).
     # @option attributes [String] :description The event description
     # @option attributes [String] :location The event location
     # @option attributes [String] :url The event URL
