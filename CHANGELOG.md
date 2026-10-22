@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.10] - 2026-10-22
+
+- **Breaking:** `Event.new` and `Event#update_attributes` now raise `ArgumentError` (`Unknown attribute(s): locaton`) for keys that aren't `Event` attributes, instead of silently ignoring them — so typos no longer drop data. Callers passing extra keys (e.g. a whole params hash) must slice them first. `update_attributes` checks every key before assigning, so a rejected call leaves the event unchanged. (#10)
+
 ## [v0.2.9] - 2026-10-22
 
 - `Event` now raises `ArgumentError` when `end_time` isn't after `start_time` (RFC 5545 requires `DTEND` later than `DTSTART`; all-day events may end on the same date), and when a `multi_day_sessions` entry is missing a time or ends before it starts. Previously these produced nonsensical invites. (#9)
