@@ -67,7 +67,8 @@ module CalInvite
     # @option attributes [String] :location The event location
     # @option attributes [String] :url The event URL
     # @option attributes [Array<String>] :attendees The event attendees
-    # @option attributes [String] :timezone ('UTC') The event timezone
+    # @option attributes [String] :timezone The event timezone. Defaults to
+    #   CalInvite.configuration.timezone ('UTC' unless configured).
     # @option attributes [Boolean] :show_attendees (false) Whether to show attendees
     # @option attributes [String] :notes Additional notes
     # @option attributes [Array<Hash>] :multi_day_sessions Multi-day session details
@@ -93,7 +94,7 @@ module CalInvite
     def initialize(attributes = {})
       attributes = attributes.dup # never mutate the caller's hash
       @show_attendees = attributes.delete(:show_attendees) || false
-      @timezone = attributes.delete(:timezone) || 'UTC'
+      @timezone = attributes.delete(:timezone) || CalInvite.configuration&.timezone || 'UTC'
       @multi_day_sessions = attributes.delete(:multi_day_sessions) || []
       @all_day = attributes.delete(:all_day) || false
       @uid = attributes.delete(:uid) || generate_uid
