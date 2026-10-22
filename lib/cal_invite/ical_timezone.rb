@@ -13,13 +13,38 @@ module CalInvite
   # 2.x; the few period accessors renamed in 2.x go through {period_starts_at},
   # {period_ends_at} and {period_local_ends_at}.
   #
-  # Both entry points fail soft: if `tzid` isn't a TZInfo-recognized identifier (e.g.
-  # a raw UTC offset string like "+01:00", or 'UTC' itself), they return nil so
-  # callers can fall back to their previous behavior instead of raising.
+  # Event validates `timezone` with {valid?}, so by the time a provider runs it's
+  # either UTC or a TZInfo-recognized identifier. {local_time} and
+  # {vtimezone_lines} still fail soft (return nil) for UTC or unrecognized input.
   #
   # @api private
   module IcalTimezone
     module_function
+
+    # Whether `tzid` means UTC (case-insensitive 'UTC'), which needs no VTIMEZONE:
+    # times are emitted as `Z`-suffixed UTC timestamps instead.
+    #
+    # @param tzid [String, nil] The timezone identifier
+    # @return [Boolean]
+    def utc?(tzid)
+      tzid.to_s.upcase == 'UTC'
+    end
+
+    # Whether `tzid` is usable as an event timezone: UTC or a TZInfo-recognized
+    # IANA identifier (e.g. "America/New_York"). Raw offsets like "+01:00" aren't:
+    # they have no VTIMEZONE definition.
+    #
+    # @param tzid [String, nil] The timezone identifier
+    # @return [Boolean]
+    def valid?(tzid)
+      return true if utc?(tzid)
+      return false if tzid.nil? || tzid.to_s.strip.empty?
+
+      TZInfo::Timezone.get(tzid.to_s)
+      true
+    rescue TZInfo::InvalidTimezoneIdentifier
+      false
+    end
 
     # Converts a UTC time to local wall-clock time for the given timezone.
     #
@@ -27,7 +52,7 @@ module CalInvite
     # @param utc_time [Time] The time to convert (interpreted as UTC)
     # @return [Time, nil] The local wall-clock time, or nil if tzid is unrecognized
     def local_time(tzid, utc_time)
-      return nil if tzid.nil? || tzid.to_s.strip.empty? || tzid.to_s.upcase == 'UTC'
+      return nil if utc?(tzid) || tzid.nil? || tzid.to_s.strip.empty?
 
       TZInfo::Timezone.get(tzid.to_s).utc_to_local(utc_time.utc)
     rescue TZInfo::InvalidTimezoneIdentifier
@@ -42,7 +67,7 @@ module CalInvite
     # @return [Array<String>, nil] iCalendar lines for the VTIMEZONE component, or
     #   nil if tzid is unrecognized, is UTC, or the component can't be built
     def vtimezone_lines(tzid)
-      return nil if tzid.nil? || tzid.to_s.strip.empty? || tzid.to_s.upcase == 'UTC'
+      return nil if utc?(tzid) || tzid.nil? || tzid.to_s.strip.empty?
 
       tz = TZInfo::Timezone.get(tzid.to_s)
       current = tz.period_for_utc(Time.now.utc)

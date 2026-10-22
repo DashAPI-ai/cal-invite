@@ -140,8 +140,8 @@ module CalInvite
           "BEGIN:VEVENT",
           "UID:#{event.uid}",
           "DTSTAMP:#{format_timestamp(Time.now.utc)}",
-          "DTSTART;TZID=#{event.timezone}:#{format_local_timestamp(start_time)}",
-          "DTEND;TZID=#{event.timezone}:#{format_local_timestamp(end_time)}",
+          date_time_line("DTSTART", start_time),
+          date_time_line("DTEND", end_time),
           "SUMMARY:#{escape_text(event.title)}"
         ]
         add_optional_fields(vevent)
@@ -204,6 +204,20 @@ module CalInvite
       # @return [String] The formatted date (YYYYMMDD)
       def format_date(time)
         time.strftime("%Y%m%d")
+      end
+
+      # Builds a DTSTART/DTEND line: a `Z`-suffixed UTC timestamp for UTC events,
+      # otherwise local wall-clock time referencing the event's VTIMEZONE.
+      #
+      # @param name [String] The property name ("DTSTART" or "DTEND")
+      # @param time [Time] The time to format (UTC)
+      # @return [String] The content line
+      def date_time_line(name, time)
+        if CalInvite::IcalTimezone.utc?(event.timezone)
+          "#{name}:#{format_timestamp(time)}"
+        else
+          "#{name};TZID=#{event.timezone}:#{format_local_timestamp(time)}"
+        end
       end
 
       # Formats a time object as a local timestamp in iCalendar format.

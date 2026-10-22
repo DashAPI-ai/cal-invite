@@ -35,7 +35,7 @@ All attributes are set via `CalInvite::Event.new(attributes)` or `event.update_a
 | `attendees`            | `Array<String, Hash>` | no                               | `nil`   | Email strings, or `{ email:, name:, partstat:, rsvp: }` hashes for a display name (`CN=`), a specific RSVP status, and/or an explicit `RSVP=` override. Only emitted if `show_attendees` is `true`. `partstat` is one of `:accepted`, `:declined`, `:tentative`, `:needs_action` (default), `:delegated`. `rsvp:` defaults to `true` for `:request`/`:cancel`/`:publish` and `false` for `:reply`/`:counter`/`:decline_counter`; set it explicitly to override (e.g. `rsvp: false` on an already-`:accepted` attendee in a registration-confirmation invite — see [Replicating a ticketing-platform confirmation email](#replicating-a-ticketing-platform-confirmation-email)). |
 | `show_attendees`       | `Boolean`       | no                                     | `false` | Gate for including `attendees` in generated output. |
 | `organizer`             | `Hash`          | no, but required for `method: :request` | `nil`   | `{ name: "Jane Doe", email: "jane@example.com" }`. `name` is optional. See [Email meeting invites](#email-meeting-invites-rsvp-capable). |
-| `timezone`             | `String`        | no                                     | `'UTC'` | Controls display/formatting only — does not affect how `start_time`/`end_time` are interpreted. Any IANA identifier (e.g. `'America/New_York'`) produces a correctly converted `DTSTART;TZID=...` plus a full `VTIMEZONE` block; see [Timezones and VTIMEZONE](#timezones-and-vtimezone). |
+| `timezone`             | `String`        | no                                     | `'UTC'` | Controls display/formatting only — does not affect how `start_time`/`end_time` are interpreted. Must be `'UTC'` or an IANA identifier (e.g. `'America/New_York'`), which produces a correctly converted `DTSTART;TZID=...` plus a full `VTIMEZONE` block; anything else raises `ArgumentError`. See [Timezones and VTIMEZONE](#timezones-and-vtimezone). |
 | `notes`                | `String`        | no                                     | `nil`   | Appended to the description. |
 | `all_day`              | `Boolean`       | no                                     | `false` | When `true`, `start_time`/`end_time` validation is skipped. |
 | `multi_day_sessions`   | `Array<Hash>`   | no                                     | `[]`    | `[{ start_time:, end_time: }, ...]`. Used instead of `start_time`/`end_time` for multi-session events. |
@@ -506,11 +506,11 @@ For any `timezone` other than `'UTC'` that's a recognized IANA/Olson identifier
 timestamps with no `VTIMEZONE` block, which every calendar client understands
 unambiguously.
 
-If `timezone` isn't a recognized IANA identifier (e.g. a raw offset string like
-`'+01:00'`), both providers fall back to treating `start_time`/`end_time` as
-already being in that zone's wall-clock time — the pre-existing behavior — since
-there's no timezone database entry to convert against or build a `VTIMEZONE`
-from.
+Any other value — including raw offset strings like `'+01:00'` — raises
+`ArgumentError` from `Event.new`/`update_attributes`: there's no timezone
+database entry to convert against or build a `VTIMEZONE` from, and emitting a
+`TZID` with no matching `VTIMEZONE` is invalid RFC 5545. Use the IANA name for
+the place instead (e.g. `'Europe/Paris'`), or `'UTC'`.
 
 ## Global configuration (`CalInvite.configure`)
 

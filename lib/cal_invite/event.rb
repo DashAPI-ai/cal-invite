@@ -216,6 +216,10 @@ module CalInvite
         raise ArgumentError, "Start time is required for non-all-day events" if start_time.nil?
         raise ArgumentError, "End time is required for non-all-day events" if end_time.nil?
       end
+
+      unless CalInvite::IcalTimezone.valid?(timezone)
+        raise ArgumentError, "Unknown timezone #{timezone.inspect}: use 'UTC' or an IANA identifier such as 'America/New_York'"
+      end
     end
 
     # Checks if caching is enabled in the configuration.
