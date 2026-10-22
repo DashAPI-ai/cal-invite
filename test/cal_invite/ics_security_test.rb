@@ -18,8 +18,9 @@ module CalInvite
       }.merge(attrs))
     end
 
+    # Unfolds (RFC 5545 §3.1) before splitting, as a calendar client would.
     def content_lines(ics)
-      ics.split("\r\n")
+      ics.gsub("\r\n ", "").split("\r\n")
     end
 
     def assert_no_injection(ics)

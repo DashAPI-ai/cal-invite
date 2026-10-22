@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.6] - 2026-10-22
+
+- `.ics` output (`:ics`, `:ical`, `IcsContent`) now folds content lines longer than 75 octets (CRLF + single space, RFC 5545 §3.1), never splitting a multi-byte UTF-8 character. Long descriptions and attendee lines previously exceeded the limit, which Outlook and some mail gateways can mangle or reject. (#6)
+
 ## [v0.2.5] - 2026-10-22
 
 - **Security:** fix content-line/parameter injection in `.ics` output (`:ics`, `:ical`, `IcsContent`). A CR or LF in event attributes (title, description, attendee/organizer names and emails, `uid`, `rrule`, `visibility`, `geo`, ...), or a `"` in a display name, could add arbitrary properties to a generated invite (e.g. extra attendees, a different `METHOD:`). URL providers were not affected. (#5)
