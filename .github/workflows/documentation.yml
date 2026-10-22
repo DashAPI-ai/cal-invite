@@ -1,6 +1,27 @@
 name: Documentation
 
 on:
+  # Deploys on their own when a file RDoc renders changes on main.
+  # Keep this list in sync with rdoc_files in the Rakefile.
+  push:
+    branches: ["main"]
+    paths:
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONFIGURATION.md"
+      - "CACHING.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "LICENSE.txt"
+      - "lib/**"
+      - "assets/**"
+      - "Rakefile"
+      - ".rdoc_options"
+      - "cal-invite.gemspec"
+      - ".github/workflows/documentation.yml"
+  # Manual run from the Actions tab, on any branch, with no release needed.
+  workflow_dispatch:
+  # Called by main.yml on release tags.
   workflow_call:
     inputs:
       ruby-version:
@@ -8,7 +29,6 @@ on:
         required: false
         default: '3.3'
         type: string
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,15 +36,17 @@ permissions:
   id-token: write
 
 concurrency:
+  # Queue deploys instead of cancelling them, so a docs run from main cannot
+  # cancel an in-flight release deploy.
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
+      contents: read
       pages: write
       id-token: write
 
@@ -48,7 +70,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.3'
+        ruby-version: ${{ inputs.ruby-version || '3.3' }}
 
     - name: Install dependencies
       run: |
@@ -61,13 +83,6 @@ jobs:
       run: |
         bundle exec rake rdoc
         cp -R assets doc/
-
-    - name: Debug Deployment
-      run: |
-        echo "Current directory:"
-        pwd
-        echo "Contents of doc/:"
-        ls -la doc/
 
     - name: Setup Pages
       uses: actions/configure-pages@v5

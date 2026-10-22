@@ -1,0 +1,7 @@
+/* Keep README images inside the content column. The Aliki template
+   leaves them at their natural width, so wide banners run under the
+   "On This Page" sidebar. */
+main img {
+  max-width: 100%;
+  height: auto;
+}

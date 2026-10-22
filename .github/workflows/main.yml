@@ -3,28 +3,38 @@ name: Ruby Gem
 on:
   push:
     branches: ["main"]
+    # Tag pushes are never filtered by paths, so a release always runs the tests.
     tags:
       - "v*"
+    paths-ignore:
+      - "**/*.md"
+      - "assets/**"
   pull_request:
     branches: ["main"]
+    paths-ignore:
+      - "**/*.md"
+      - "assets/**"
+
+# Cancel superseded runs for the same PR or branch. Tag runs are never cancelled.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
-  pages: write      # Added this
-  id-token: write   # Added this
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     strategy:
       matrix:
         ruby-version: ["3.3"]
-        rails-version: ["6","7", "8"]
+        rails-version: ["6", "7", "8"]
       fail-fast: false
-    timeout-minutes: 60
+    timeout-minutes: 20
+    env:
+      BUNDLE_GEMFILE: gemfiles/Gemfile.rails${{ matrix.rails-version }}
     steps:
       - uses: actions/checkout@v7
       - name: Set up Ruby
@@ -32,13 +42,8 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
-      - name: Install dependencies
-        run: |
-          bundle config path vendor/bundle
-          BUNDLE_GEMFILE=gemfiles/Gemfile.rails${{ matrix.rails-version }} bundle install
       - name: Run tests
-        run: |
-          BUNDLE_GEMFILE=gemfiles/Gemfile.rails${{ matrix.rails-version }} bundle exec rake test
+        run: bundle exec rake test
 
   build:
     name: Build + Publish
@@ -47,7 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v7
       - name: Set up Ruby
@@ -68,13 +72,14 @@ jobs:
         env:
           GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
 
+  # Release-time docs. Docs also deploy on their own from main (see documentation.yml).
   documentation:
     name: Generate and Deploy Documentation
     needs: build
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/documentation.yml
     permissions:
-      contents: write
+      contents: read
       pages: write
       id-token: write
     with:
