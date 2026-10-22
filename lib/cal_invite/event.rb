@@ -19,7 +19,7 @@ require 'digest'
 # @attr_accessor [String] notes Additional notes for the event
 # @attr_accessor [Array<Hash>] multi_day_sessions Sessions for multi-day events
 # @attr_accessor [Boolean] all_day Whether this is an all-day event
-# @attr_accessor [Hash] organizer The event organizer, e.g. { name: "Jane Doe", email: "jane@example.com" }
+# @attr_accessor [String, Hash] organizer The event organizer: an email string, or e.g. { name: "Jane Doe", email: "jane@example.com" }
 # @attr_accessor [String] uid Stable RFC 5545 UID identifying this event across its lifecycle
 # @attr_accessor [Integer] sequence RFC 5545 SEQUENCE number; bump on every REQUEST/CANCEL update
 # @attr_accessor [Array<Float>, Hash] geo Location coordinates, e.g. [37.4595, -122.1418] or { lat:, lng: }
@@ -74,7 +74,7 @@ module CalInvite
     # @option attributes [String] :notes Additional notes
     # @option attributes [Array<Hash>] :multi_day_sessions Multi-day session details
     # @option attributes [Boolean] :all_day (false) Whether it's an all-day event
-    # @option attributes [Hash] :organizer The event organizer, e.g. { name: "Jane Doe", email: "jane@example.com" }
+    # @option attributes [String, Hash] :organizer The event organizer: an email string, or e.g. { name: "Jane Doe", email: "jane@example.com" }
     # @option attributes [String] :uid A stable identifier for this event. If omitted, a random one
     #   is generated and memoized on this instance. To update or cancel a previously sent invite,
     #   you MUST pass the same :uid used originally — mail/calendar clients match REQUEST/CANCEL

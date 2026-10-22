@@ -221,6 +221,18 @@ module CalInvite
       end
     end
 
+    def test_organizer_accepts_email_string_or_hash
+      build = ->(organizer) { Event.new(title: "Sync", start_time: @start_time, end_time: @end_time, organizer: organizer) }
+      organizer_line = ->(organizer) { build.call(organizer).generate_calendar_url(:ics, method: :request)[/^ORGANIZER.*$/]&.chomp }
+
+      assert_equal "ORGANIZER:mailto:org@example.com", organizer_line.call("org@example.com")
+      assert_equal "ORGANIZER:mailto:org@example.com", organizer_line.call({ email: "org@example.com" })
+      assert_equal 'ORGANIZER;CN="Org":mailto:org@example.com', organizer_line.call({ email: "org@example.com", name: "Org" })
+      assert_equal 'ORGANIZER;CN="Org":mailto:org@example.com', organizer_line.call({ "email" => "org@example.com", "name" => "Org" })
+      assert_nil organizer_line.call("")
+      assert_nil organizer_line.call({ name: "No email" })
+    end
+
     def test_ics_family_all_day_event_without_times
       event = Event.new(title: "Holiday", all_day: true)
       today = Time.now.strftime("%Y%m%d")
