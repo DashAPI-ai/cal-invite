@@ -112,7 +112,8 @@ module CalInvite
     # Generates a calendar URL (or, for the ics/ical/ics_content providers, raw
     # iCalendar content) for the specified provider.
     #
-    # @param provider [Symbol] The calendar provider to generate the URL for
+    # @param provider [Symbol, String] One of {CalInvite::Providers::SUPPORTED_PROVIDERS}
+    #   (`:ics_content` is also accepted as a legacy alias of `:ics`)
     # @param method [Symbol] The iCalendar METHOD to use (:publish, :request, :cancel,
     #   :reply, :counter, or :decline_counter). Only honored by the ics-family providers
     #   (ics, ical, ics_content); ignored by URL-based providers.
@@ -129,7 +130,7 @@ module CalInvite
     #     "Attendee-proposed reschedules (COUNTER)".
     #   - :decline_counter is the organizer rejecting a :counter proposal.
     # @return [String] The generated calendar URL or content
-    # @raise [ArgumentError] If required event attributes are missing
+    # @raise [ArgumentError] If required event attributes are missing or the provider is unsupported
     #
     # @example Generate a Google Calendar URL
     #   event.generate_calendar_url(:google)
@@ -147,6 +148,7 @@ module CalInvite
     #   event.generate_calendar_url(:ics, method: :cancel)
     def generate_calendar_url(provider, method: :publish)
       validate!
+      provider_class = provider_class_for(provider)
 
       if caching_enabled?
         cache_key = cache_key_for(provider, method)
@@ -155,7 +157,6 @@ module CalInvite
       end
 
       # Generate the URL
-      provider_class = CalInvite::Providers.const_get(capitalize_provider(provider.to_s))
       generator = provider_class.new(self, method: method)
       url = generator.generate
 
@@ -191,6 +192,27 @@ module CalInvite
     # @return [String] The generated UID
     def generate_uid
       "#{Time.now.to_i}-#{SecureRandom.hex(8)}@cal-invite"
+    end
+
+    # Legacy provider symbols that still resolve; `:ics_content` has produced the
+    # same output as `:ics` since IcsContent became a subclass of Ics.
+    PROVIDER_ALIASES = { ics_content: :ics }.freeze
+
+    # Resolves a provider symbol to its class, accepting only
+    # {CalInvite::Providers::SUPPORTED_PROVIDERS} (plus {PROVIDER_ALIASES}).
+    #
+    # @param provider [Symbol, String] The provider name
+    # @return [Class] The provider class
+    # @raise [ArgumentError] If the provider isn't supported
+    def provider_class_for(provider)
+      key = provider.to_s.to_sym
+      key = PROVIDER_ALIASES.fetch(key, key)
+      unless CalInvite::Providers::SUPPORTED_PROVIDERS.include?(key)
+        raise ArgumentError,
+              "Unsupported provider #{provider.inspect}; supported: #{CalInvite::Providers::SUPPORTED_PROVIDERS.join(', ')}"
+      end
+
+      CalInvite::Providers.const_get(capitalize_provider(key.to_s), false)
     end
 
     # Capitalizes each part of the provider name.

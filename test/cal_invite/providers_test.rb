@@ -229,5 +229,25 @@ module CalInvite
         assert_match %r{DTSTART;VALUE=DATE:#{today}}, event.generate_calendar_url(provider)
       end
     end
+
+    def test_unsupported_provider_raises_a_clear_error
+      [:string, :base_provider, :ics_download, "nope"].each do |provider|
+        error = assert_raises(ArgumentError, provider.inspect) { @event.generate_calendar_url(provider) }
+        assert_equal "Unsupported provider #{provider.inspect}; supported: google, ical, outlook, yahoo, ics, office365", error.message
+      end
+    end
+
+    def test_every_supported_provider_resolves
+      Providers::SUPPORTED_PROVIDERS.each do |provider|
+        refute_empty @event.generate_calendar_url(provider), provider.inspect
+        refute_empty @event.generate_calendar_url(provider.to_s), provider.to_s
+      end
+    end
+
+    def test_ics_content_is_a_legacy_alias_of_ics
+      strip_dtstamp = ->(ics) { ics.gsub(/^DTSTAMP:.*$/, "") }
+      assert_equal strip_dtstamp.call(@event.generate_calendar_url(:ics)),
+                   strip_dtstamp.call(@event.generate_calendar_url(:ics_content))
+    end
   end
 end
