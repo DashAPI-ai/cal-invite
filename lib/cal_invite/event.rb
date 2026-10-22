@@ -91,7 +91,7 @@ module CalInvite
     # @option attributes [Symbol, String] :importance :low, :normal, or :high
     # @option attributes [Boolean] :allow_counter (true) false emits X-MICROSOFT-DISALLOW-COUNTER
     #
-    # @raise [ArgumentError] If required attributes are missing
+    # @raise [ArgumentError] If required attributes are missing or invalid, or a key isn't an Event attribute
     def initialize(attributes = {})
       attributes = attributes.dup # never mutate the caller's hash
       @show_attendees = attributes.delete(:show_attendees) || false
@@ -104,9 +104,7 @@ module CalInvite
       @visibility = attributes.delete(:visibility) || :public
       @allow_counter = attributes.key?(:allow_counter) ? attributes.delete(:allow_counter) : true
 
-      attributes.each do |key, value|
-        send("#{key}=", value) if respond_to?("#{key}=")
-      end
+      assign_attributes(attributes)
 
       validate!
     end
@@ -171,7 +169,7 @@ module CalInvite
     #
     # @param new_attributes [Hash] The new attributes to update
     # @return [void]
-    # @raise [ArgumentError] If the updated attributes make the event invalid
+    # @raise [ArgumentError] If a key isn't an Event attribute (nothing is changed), or the updated attributes make the event invalid
     #
     # @example Update event title and time
     #   event.update_attributes(
@@ -179,9 +177,7 @@ module CalInvite
     #     start_time: Time.now + 3600
     #   )
     def update_attributes(new_attributes)
-      new_attributes.each do |key, value|
-        send("#{key}=", value) if respond_to?("#{key}=")
-      end
+      assign_attributes(new_attributes)
 
       invalidate_cache if caching_enabled?
       validate!
@@ -229,6 +225,20 @@ module CalInvite
       unless CalInvite::IcalTimezone.valid?(timezone)
         raise ArgumentError, "Unknown timezone #{timezone.inspect}: use 'UTC' or an IANA identifier such as 'America/New_York'"
       end
+    end
+
+    # Assigns attributes through their setters. Checks every key first, so an
+    # unknown key (e.g. a typo like `locaton:`) raises before anything changes
+    # instead of being silently dropped.
+    #
+    # @param attributes [Hash] Attribute names (symbols or strings) to values
+    # @raise [ArgumentError] If any key isn't an Event attribute
+    # @return [void]
+    def assign_attributes(attributes)
+      unknown = attributes.keys.reject { |key| respond_to?("#{key}=") }
+      raise ArgumentError, "Unknown attribute(s): #{unknown.join(', ')}" if unknown.any?
+
+      attributes.each { |key, value| send("#{key}=", value) }
     end
 
     # Raises unless the end comes after the start. RFC 5545 requires DTEND to be

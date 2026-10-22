@@ -123,6 +123,21 @@ module CalInvite
       assert_equal 1, Event.new(base.merge(multi_day_sessions: [good])).multi_day_sessions.size
     end
 
+    def test_rejects_unknown_attributes
+      error = assert_raises(ArgumentError) do
+        Event.new(title: "Meeting", start_time: Time.utc(2026, 11, 1, 15), end_time: Time.utc(2026, 11, 1, 16), locaton: "Paris", "colour" => "red")
+      end
+      assert_equal "Unknown attribute(s): locaton, colour", error.message
+    end
+
+    def test_update_attributes_rejects_unknown_attributes_without_changing_anything
+      event = Event.new(title: "Meeting", start_time: Time.utc(2026, 11, 1, 15), end_time: Time.utc(2026, 11, 1, 16))
+
+      error = assert_raises(ArgumentError) { event.update_attributes(title: "Renamed", locaton: "Paris") }
+      assert_equal "Unknown attribute(s): locaton", error.message
+      assert_equal "Meeting", event.title
+    end
+
     def test_accepts_string_keyed_attributes
       event = Event.new(
         "title" => "Meeting",

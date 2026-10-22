@@ -22,7 +22,7 @@ For caching-specific detail, see [CACHING.md](CACHING.md).
 
 ## Event attributes
 
-All attributes are set via `CalInvite::Event.new(attributes)` or `event.update_attributes(attributes)`.
+All attributes are set via `CalInvite::Event.new(attributes)` or `event.update_attributes(attributes)` (symbol or string keys). Any key not listed below raises `ArgumentError` (`Unknown attribute(s): ...`); `update_attributes` checks all keys before changing anything.
 
 | Attribute             | Type            | Required                              | Default | Notes |
 |------------------------|-----------------|----------------------------------------|---------|-------|
