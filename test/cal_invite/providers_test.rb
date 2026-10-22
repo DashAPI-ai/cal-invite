@@ -180,5 +180,21 @@ module CalInvite
       assert_match %r{LOCATION:Conference Room A}, ics_content
       assert_match %r{URL:https://meet.test.com}, ics_content
     end
+
+    def test_ics_non_utc_timezone_converts_to_local_time_with_vtimezone
+      event = Event.new(
+        title: "NY Meeting",
+        start_time: Time.utc(2026, 11, 1, 15, 0, 0),
+        end_time: Time.utc(2026, 11, 1, 16, 0, 0),
+        timezone: "America/New_York"
+      )
+      ics = event.generate_calendar_url(:ics)
+
+      assert_includes ics, "DTSTART;TZID=America/New_York:20261101T100000"
+      assert_includes ics, "DTEND;TZID=America/New_York:20261101T110000"
+      assert_includes ics, "BEGIN:VTIMEZONE\r\nTZID:America/New_York"
+      assert_includes ics, "TZOFFSETFROM:-0400\r\nTZOFFSETTO:-0500\r\nTZNAME:EST"
+      assert_includes ics, "TZOFFSETFROM:-0500\r\nTZOFFSETTO:-0400\r\nTZNAME:EDT"
+    end
   end
 end

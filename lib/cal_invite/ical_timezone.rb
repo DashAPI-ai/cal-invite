@@ -9,6 +9,10 @@ module CalInvite
   # time for a given IANA/Olson timezone identifier, using TZInfo (already pulled in
   # transitively via activesupport).
   #
+  # Only uses TZInfo APIs available in both tzinfo 1.2+ (pinned by Rails 6.0) and
+  # 2.x; the few period accessors renamed in 2.x go through {period_starts_at},
+  # {period_ends_at} and {period_local_ends_at}.
+  #
   # Both entry points fail soft: if `tzid` isn't a TZInfo-recognized identifier (e.g.
   # a raw UTC offset string like "+01:00", or 'UTC' itself), they return nil so
   # callers can fall back to their previous behavior instead of raising.
@@ -25,7 +29,7 @@ module CalInvite
     def local_time(tzid, utc_time)
       return nil if tzid.nil? || tzid.to_s.strip.empty? || tzid.to_s.upcase == 'UTC'
 
-      TZInfo::Timezone.get(tzid.to_s).to_local(utc_time.utc)
+      TZInfo::Timezone.get(tzid.to_s).utc_to_local(utc_time.utc)
     rescue TZInfo::InvalidTimezoneIdentifier
       nil
     end
@@ -41,7 +45,7 @@ module CalInvite
       return nil if tzid.nil? || tzid.to_s.strip.empty? || tzid.to_s.upcase == 'UTC'
 
       tz = TZInfo::Timezone.get(tzid.to_s)
-      current = tz.period_for(Time.now.utc)
+      current = tz.period_for_utc(Time.now.utc)
 
       if current.dst?
         dst_period = current
@@ -71,28 +75,45 @@ module CalInvite
 
     # @api private
     def period_before(tz, period)
-      return nil unless period.starts_at
+      starts_at = period_starts_at(period)
+      return nil unless starts_at
 
-      tz.period_for(period.starts_at.to_time - 1)
+      tz.period_for_utc(starts_at.to_time - 1)
     end
 
     # @api private
     def period_after(tz, period)
-      return nil unless period&.ends_at
+      ends_at = period && period_ends_at(period)
+      return nil unless ends_at
 
-      tz.period_for(period.ends_at.to_time)
+      tz.period_for_utc(ends_at.to_time)
+    end
+
+    # @api private
+    def period_starts_at(period)
+      period.respond_to?(:starts_at) ? period.starts_at : period.utc_start
+    end
+
+    # @api private
+    def period_ends_at(period)
+      period.respond_to?(:ends_at) ? period.ends_at : period.utc_end
+    end
+
+    # @api private
+    def period_local_ends_at(period)
+      period.respond_to?(:local_ends_at) ? period.local_ends_at : period.local_end
     end
 
     # @api private
     def observance_lines(kind, from_period, to_period)
-      transition_time = from_period.local_ends_at.to_time
+      transition_time = period_local_ends_at(from_period).to_time
 
       [
         "BEGIN:#{kind}",
         "DTSTART:#{transition_time.strftime('%Y%m%dT%H%M%S')}",
-        "TZOFFSETFROM:#{format_offset(from_period.offset.observed_utc_offset)}",
-        "TZOFFSETTO:#{format_offset(to_period.offset.observed_utc_offset)}",
-        "TZNAME:#{to_period.offset.abbreviation}",
+        "TZOFFSETFROM:#{format_offset(from_period.utc_total_offset)}",
+        "TZOFFSETTO:#{format_offset(to_period.utc_total_offset)}",
+        "TZNAME:#{to_period.abbreviation}",
         rrule_line(transition_time),
         "END:#{kind}"
       ]
@@ -103,9 +124,9 @@ module CalInvite
       [
         "BEGIN:STANDARD",
         "DTSTART:16010101T000000",
-        "TZOFFSETFROM:#{format_offset(period.offset.observed_utc_offset)}",
-        "TZOFFSETTO:#{format_offset(period.offset.observed_utc_offset)}",
-        "TZNAME:#{period.offset.abbreviation}",
+        "TZOFFSETFROM:#{format_offset(period.utc_total_offset)}",
+        "TZOFFSETTO:#{format_offset(period.utc_total_offset)}",
+        "TZNAME:#{period.abbreviation}",
         "END:STANDARD"
       ]
     end

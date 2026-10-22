@@ -1,5 +1,9 @@
 # Cal Invite
 
+## [v0.2.3] - 2026-10-22
+
+- Fix non-UTC timezones under tzinfo 1.x (Rails/ActiveSupport 6.0): `:ics`/`:ical` raised `NoMethodError` (`to_local`) for any non-UTC `timezone`, and `VTIMEZONE` was silently omitted. `IcalTimezone` now only uses APIs shared by tzinfo 1.2+ and 2.x; output is unchanged on tzinfo 2. (#17)
+
 ## [v0.2.2] - 2026-10-22
 
 - Docs: README "Testing" section now covers the three ways to exercise the gem locally (`rake test` incl. single-file runs, `bin/console` with a working sample event, and the Example app's local-path Gemfile workflow).
