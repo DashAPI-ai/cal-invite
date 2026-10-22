@@ -17,6 +17,5 @@ gemfiles/*.lock
 .ruby-gemset
 .env
 .env.*
-.DS_Storedoc/
 .DS_Store
 **/.DS_Store
