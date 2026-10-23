@@ -20,8 +20,6 @@
 # why raw .ics email invites often can't be tracked this way at all unless
 # the organizer address is backed by a real mailbox/calendar system.
 class EventRepliesController < ApplicationController
-  skip_before_action :verify_authenticity_token, raise: false
-
   def create
     mail = Mail.read_from_string(inbound_raw_mime)
     calendar_part = mail.all_parts.find { |part| part.content_type.to_s.include?("text/calendar") } || mail
