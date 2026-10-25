@@ -3,6 +3,7 @@
 require "bundler/gem_tasks"
 require "rake/testtask"
 require "rdoc/task"
+require_relative "rakelib/docs_site"
 
 # Test task configuration
 Rake::TestTask.new(:test) do |t|
@@ -30,6 +31,10 @@ RDoc::Task.new(:rdoc) do |rdoc|
                           'SECURITY.md', 'CODE_OF_CONDUCT.md', 'LICENSE.txt', 'lib/**/*.rb')
   rdoc.rdoc_files.exclude('lib/cal_invite/version.rb')
 end
+
+# Adds Markdown copies, llms.txt, robots.txt, sitemap.xml and head metadata to
+# the RDoc output (see rakelib/docs_site.rb).
+Rake::Task[:rdoc].enhance { DocsSite.build("doc") }
 
 # Define a task to clean documentation
 task 'rdoc:clean' do

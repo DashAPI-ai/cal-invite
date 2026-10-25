@@ -5,3 +5,9 @@ main img {
   max-width: 100%;
   height: auto;
 }
+
+/* Download link added to every page by rakelib/docs_site.rb. */
+.md-export {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
