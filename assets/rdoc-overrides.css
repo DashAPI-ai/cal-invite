@@ -11,3 +11,18 @@ main img {
   margin: 0 0 1rem;
   font-size: 0.9rem;
 }
+
+/* Link to the source repository, added to the header by rakelib/docs_site.rb. */
+.navbar-repo {
+  align-self: center;
+  margin-left: auto;
+  padding: 0 0.5rem;
+  font-size: 0.9rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.navbar-repo:hover,
+.navbar-repo:focus-visible {
+  text-decoration: underline;
+}

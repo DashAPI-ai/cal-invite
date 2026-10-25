@@ -11,6 +11,7 @@ require "rdoc"
 module DocsSite
   BASE_URL = "https://dashapi-ai.github.io/cal-invite/"
   SITE_NAME = "CalInvite"
+  REPO_URL = "https://github.com/DashAPI-ai/cal-invite"
   SITE_DESCRIPTION = "Ruby gem that generates calendar invitations (URLs and .ics files) " \
                      "for Google Calendar, Outlook, Office 365, Yahoo, Apple iCal and generic .ics clients."
   IMAGE_PATH = "assets/social/cal-invite-github.png"
@@ -24,6 +25,7 @@ module DocsSite
   RDOC_META = /<meta\s[^>]*?\b(?:name|property)="(?:description|og:[^"]*|twitter:[^"]*)"[^>]*>\s*/m
   MARKER = /<!-- docs-site:(\w+) -->.*?<!-- \/docs-site:\1 -->\n?/m
   TOP_NAV = /<main[^>]*>/
+  THEME_TOGGLE = "<!-- Theme toggle button -->"
 
   Page = Struct.new(:html, :md, :title, :heading, :description, :markdown, :api)
 
@@ -207,10 +209,18 @@ module DocsSite
       <!-- /docs-site:export -->
     HTML
 
+    repo = <<~HTML
+      <!-- docs-site:repo -->
+      <a href="#{REPO_URL}" class="navbar-repo" target="_blank" rel="noopener">GitHub</a>
+      <!-- /docs-site:repo -->
+    HTML
+
     # RDoc's template never closes <head>, so the block closes it here.
     html = html.sub(/<body\b/) { "#{head}#{Regexp.last_match(0)}" }
     raise "no <body> in #{page.html}" unless html.include?("<body")
+    raise "no theme toggle in #{page.html}" unless html.include?(THEME_TOGGLE)
 
+    html = html.sub(THEME_TOGGLE) { "#{repo}#{THEME_TOGGLE}" }
     html.sub(TOP_NAV) { |tag| "#{tag}\n#{export}" }.tap do |out|
       raise "no <main> in #{page.html}" if out == html
     end
